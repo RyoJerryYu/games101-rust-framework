@@ -6,3 +6,6 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+glam = "0.21.2"
+image = { version = "0.24.3", features = ["png"], default-features = false }
+glium = "0.31.0"
