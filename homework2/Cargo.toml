@@ -1,0 +1,24 @@
+[package]
+name = "homework2"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+
+[dependencies]
+anyhow = "*"
+glam = "0.21.2"
+image = { version = "0.24.3", features = ["png"], default-features = false }
+glium = "0.31.0"
+opencv = "0.65"
+bitflags = "1.3"
+nalgebra = "0.31.0"
+
+[dependencies.cv-convert]
+version = '0.19.0'
+features = [
+    'image_0-24',
+    'opencv_0-65',
+    'nalgebra_0-30',
+]
