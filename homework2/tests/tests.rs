@@ -1,8 +1,7 @@
 #[cfg(test)]
 mod tests {
     use glam::Vec3;
-    use homework2::inside_triangle;
-    use utils::triangle::Triangle;
+    use homework2::{inside_triangle, triangle::Triangle};
 
     #[test]
     fn your_test() {
