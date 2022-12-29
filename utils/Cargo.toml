@@ -1,5 +1,5 @@
 [package]
-name = "homework2"
+name = "utils"
 version = "0.1.0"
 edition = "2021"
 
@@ -7,7 +7,6 @@ edition = "2021"
 
 
 [dependencies]
-utils = { path = "../utils" }
 anyhow = "*"
 glam = "0.21.2"
 image = { version = "0.24.3", features = ["png"], default-features = false }

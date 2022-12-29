@@ -702,6 +702,22 @@ dependencies = [
  "image",
  "nalgebra 0.31.0",
  "opencv",
+ "utils",
+]
+
+[[package]]
+name = "homework3"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bitflags",
+ "cv-convert",
+ "glam",
+ "glium",
+ "image",
+ "nalgebra 0.31.0",
+ "opencv",
+ "utils",
 ]
 
 [[package]]
@@ -1543,6 +1559,20 @@ name = "unicode-ident"
 version = "1.0.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "15c61ba63f9235225a22310255a29b806b907c9b8c964bcbd0a2c70f3f2deea7"
+
+[[package]]
+name = "utils"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bitflags",
+ "cv-convert",
+ "glam",
+ "glium",
+ "image",
+ "nalgebra 0.31.0",
+ "opencv",
+]
 
 [[package]]
 name = "vcpkg"
