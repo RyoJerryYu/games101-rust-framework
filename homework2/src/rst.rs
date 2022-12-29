@@ -130,7 +130,8 @@ impl Rasterizer {
 
     pub fn clear(&mut self, buffers: Buffers) {
         if buffers.contains(Buffers::COLOR) {
-            self.frame_buf.fill(Rgb::default());
+            // self.frame_buf.fill(Rgb::default());
+            self.frame_buf.fill(Rgb::new(255, 255, 255));
         }
         if buffers.contains(Buffers::DEPTH) {
             self.depth_buf.fill(f32::INFINITY);
