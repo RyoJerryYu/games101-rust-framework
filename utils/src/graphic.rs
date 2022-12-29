@@ -1,12 +1,12 @@
-use std::time::{Instant, Duration};
-use image::{save_buffer, ColorType};
-use std::path::Path;
 use anyhow::Result;
 use glium::glutin::event::Event;
-use glium::glutin::event_loop::{ControlFlow, EventLoop};
+use glium::glutin::event_loop::ControlFlow;
 use glium::index::PrimitiveType;
-use glium::{glutin, Display, Surface, implement_vertex, program, uniform};
+use glium::{glutin, implement_vertex, program, uniform, Display, Surface};
 use glutin::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
+use image::{save_buffer, ColorType};
+use std::path::Path;
+use std::time::{Duration, Instant};
 
 use crate::rasterizer;
 
@@ -15,7 +15,7 @@ pub fn save_image<P: AsRef<Path>>(path: P, data: &[u8], width: u32, height: u32)
     Ok(())
 }
 
-pub fn display_image(rst: & impl rasterizer::Rasterizable, display: &Display) -> Result<()> {
+pub fn display_image(rst: &impl rasterizer::Rasterizable, display: &Display) -> Result<()> {
     let vertex_buffer = {
         #[derive(Copy, Clone)]
         struct Vertex {
@@ -151,7 +151,6 @@ pub fn start_loop<F>(mut callback: F)
 where
     F: 'static + FnMut(&Action, &Display) -> Result<()>,
 {
-
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
     let cb = glutin::ContextBuilder::new().with_vsync(true);

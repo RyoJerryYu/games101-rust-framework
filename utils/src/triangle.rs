@@ -3,6 +3,18 @@ use glam::{Vec2, Vec3, Vec4};
 #[derive(Clone, Copy, Default, Debug, PartialEq, Eq)]
 pub struct Rgb(pub u8, pub u8, pub u8);
 
+impl Rgb {
+    pub fn new(r: u8, g: u8, b: u8) -> Self {
+        Self(r, g, b)
+    }
+}
+
+impl From<&image::Rgb<u8>> for Rgb {
+    fn from(i: &image::Rgb<u8>) -> Self {
+        Self(i[0], i[1], i[2])
+    }
+}
+
 impl From<&Vec3> for Rgb {
     fn from(i: &Vec3) -> Self {
         Self(i.x as u8, i.y as u8, i.z as u8)

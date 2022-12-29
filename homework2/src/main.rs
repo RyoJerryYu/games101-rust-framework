@@ -11,7 +11,8 @@ mod rst;
 
 fn main() -> Result<()> {
     let mut angle = 0.0f32;
-    let mut r = rst::Rasterizer::new(700, 700);
+    // let mut r = rst::Rasterizer::new(700, 700);
+    let mut r = rst::Rasterizer::new(70, 70);
     let eye_pos = Vec3::new(0.0, 0.0, 5.0);
     let pos = vec![
         Vec3::new(2.0, 0.0, -2.0),
@@ -35,8 +36,9 @@ fn main() -> Result<()> {
     let col_id = r.load_colors(cols);
 
     start_loop(move |action, display| {
+        let (width, height) = r.size();
         match action {
-            Action::Stop => return save_image("output.png", r.data(), 700, 700),
+            Action::Stop => return save_image("output.png", r.data(), width, height),
             Action::Key(VirtualKeyCode::A) => angle += 10.0,
             Action::Key(VirtualKeyCode::D) => angle -= 10.0,
             _ => (),
