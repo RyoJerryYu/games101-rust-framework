@@ -4,7 +4,7 @@ use bitflags::bitflags;
 use glam::{IVec2, Mat4, Vec2, Vec3, Vec4};
 use homework2::inside_triangle;
 
-use homework2::triangle::{Rgb, Triangle};
+use utils::triangle::{Triangle, Rgb};
 
 bitflags! {
     pub struct Buffers: u8 {
@@ -48,6 +48,21 @@ pub struct Rasterizer {
     width: u32,
     height: u32,
     next_id: u32,
+}
+
+impl utils::rasterizer::Rasterizable for Rasterizer {
+    fn data(&self) -> &[u8] {
+        unsafe {
+            std::slice::from_raw_parts(
+                std::mem::transmute(self.frame_buf.as_ptr()),
+                self.frame_buf.len() * 3,
+            )
+        }
+    }
+
+    fn size(&self) -> (u32, u32) {
+        (self.width, self.height)
+    }
 }
 
 impl Rasterizer {
@@ -172,18 +187,53 @@ impl Rasterizer {
 
     //Screen space rasterization
     fn rasterize_triangle(&mut self, t: &Triangle) {
-        let v = t.to_vec4();
+        // get the bounding box of the triangle
+        let mut max_x = 0.0f32;
+        let mut max_y = 0.0f32;
+        let mut min_x = self.width as f32;
+        let mut min_y = self.height as f32;
 
-        // TODO : Find out the bounding box of current triangle.
-        // iterate through the pixel and find if the current pixel is inside the triangle
+        for vertex in t.v {
+            if vertex.x > max_x {
+                max_x = vertex.x;
+            }
+            if vertex.x < min_x {
+                min_x = vertex.x;
+            }
+            if vertex.y > max_y {
+                max_y = vertex.y;
+            }
+            if vertex.y < min_y {
+                min_y = vertex.y;
+            }
+        }
 
-        // If so, use the following code to get the interpolated z value.
-        //auto[alpha, beta, gamma] = computeBarycentric2D(x, y, t.v);
-        //float w_reciprocal = 1.0/(alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
-        //float z_interpolated = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
-        //z_interpolated *= w_reciprocal;
+        for x in min_x as u32..max_x as u32 {
+            for y in min_y as u32..max_y as u32 {
+                // the center of the pixel
+                let (xc, yc) = (x as f32 + 0.5, y as f32 + 0.5);
+                if !inside_triangle(xc, yc, t) {
+                    continue;
+                }
 
-        // TODO : set the current pixel (use the set_pixel function) to the color of the triangle (use getColor function) if it should be painted.
+                // get the interpolated z value
+                let [alpha, beta, gama] = compute_barcentric_2d(xc, yc, t.v);
+                let v = t.to_vec4();
+                let w_reciprocal = 1.0 / (alpha / v[0].w + beta / v[1].w + gama / v[2].w);
+                let mut z_interpolated =
+                    alpha * v[0].z / v[0].w + beta * v[1].z / v[1].w + gama * v[2].z / v[2].w;
+                z_interpolated *= w_reciprocal;
+
+                if z_interpolated < 0.0 {
+                    continue;
+                }
+                let buf_ind = ((self.height - 1 - y) * self.width + x) as usize;
+                if z_interpolated < self.depth_buf[buf_ind] {
+                    self.set_pixel(&Vec3::new(xc, yc, z_interpolated), &t.get_color());
+                    self.depth_buf[buf_ind] = z_interpolated;
+                }
+            }
+        }
     }
 
     fn draw_line(&mut self, begin: Vec3, end: Vec3, line_color: Rgb) {
@@ -278,14 +328,6 @@ impl Rasterizer {
         return self.next_id;
     }
 
-    pub fn data(&self) -> &[u8] {
-        unsafe {
-            std::slice::from_raw_parts(
-                std::mem::transmute(self.frame_buf.as_ptr()),
-                self.frame_buf.len() * 3,
-            )
-        }
-    }
 }
 
 fn to_vec4(v3: Vec3, w: f32) -> Vec4 {
