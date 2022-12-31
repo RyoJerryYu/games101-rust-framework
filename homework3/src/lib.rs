@@ -6,7 +6,7 @@ use std::f32::consts::PI;
 use glam::{Mat4, Vec3};
 
 pub fn get_view_matrix(eye_pos: Vec3) -> Mat4 {
-    let mut view = Mat4::IDENTITY;
+    let view = Mat4::IDENTITY;
 
     let translate = Mat4::from_cols_array_2d(&[
         [1.0, 0.0, 0.0, 0.0],
