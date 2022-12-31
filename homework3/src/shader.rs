@@ -58,6 +58,7 @@ mod test {
 
     #[test]
     fn test_testure_raw() {
+        use utils::triangle::Rgb;
         /*
          * black -> blue
          * |         |
@@ -65,33 +66,39 @@ mod test {
          * green -> cyan
          */
         let raw: &[u8] = &[
-            0,0,0,
-            0,0,128,
-            0,0,255,
-            0,128,0,
-            0,128,128,
-            0,128,255,
-            0,255,0,
-            0,255,128,
-            0,255,255,
-            // 255,0,0,
-            // 255,0,128,
-            // 255,0,255,
+            0, 0, 0, //
+            0, 0, 128, //
+            0, 0, 255, //
+            0, 128, 0, //
+            0, 128, 128, //
+            0, 128, 255, //
+            0, 255, 0, //
+            0, 255, 128, //
+            0, 255,
+            255, //
+
+                 // 255,0,0,
+                 // 255,0,128,
+                 // 255,0,255,
         ];
 
-        utils::graphic::save_image("output.png", raw, 3, 3).unwrap();
+        let r = utils::rasterizer::BufRasterizer {
+            width: 3,
+            height: 3,
+            data: raw.to_vec(),
+        };
+        utils::graphic::save_image(&r, "output.png").unwrap();
 
         let texture = super::Texture::new("output.png").unwrap();
-        assert_eq!(texture.get_color(0.5, 0.5), utils::triangle::Rgb::new(0, 128, 128));
-        assert_eq!(texture.get_color(0.16, 0.5), utils::triangle::Rgb::new(0, 128, 0));
-        assert_eq!(texture.get_color(0.5, 0.16), utils::triangle::Rgb::new(0, 255, 128));
-        assert_eq!(texture.get_color(0.16, 0.16), utils::triangle::Rgb::new(0, 255, 0));
-        assert_eq!(texture.get_color(0.84, 0.84), utils::triangle::Rgb::new(0, 0, 255));
-        assert_eq!(texture.get_color(0.99, 0.01), utils::triangle::Rgb::new(0, 255, 255));
-        assert_eq!(texture.get_color(0.0, 0.0), utils::triangle::Rgb::new(0, 255, 0));
-        assert_eq!(texture.get_color(1.0, 0.0), utils::triangle::Rgb::new(0, 255, 255));
-        assert_eq!(texture.get_color(0.0, 1.0), utils::triangle::Rgb::new(0, 0, 0));
-        assert_eq!(texture.get_color(1.0, 1.0), utils::triangle::Rgb::new(0, 0, 255));
-
+        assert_eq!(texture.get_color(0.5, 0.5), Rgb::new(0, 128, 128));
+        assert_eq!(texture.get_color(0.16, 0.5), Rgb::new(0, 128, 0));
+        assert_eq!(texture.get_color(0.5, 0.16), Rgb::new(0, 255, 128));
+        assert_eq!(texture.get_color(0.16, 0.16), Rgb::new(0, 255, 0));
+        assert_eq!(texture.get_color(0.84, 0.84), Rgb::new(0, 0, 255));
+        assert_eq!(texture.get_color(0.99, 0.01), Rgb::new(0, 255, 255));
+        assert_eq!(texture.get_color(0.0, 0.0), Rgb::new(0, 255, 0));
+        assert_eq!(texture.get_color(1.0, 0.0), Rgb::new(0, 255, 255));
+        assert_eq!(texture.get_color(0.0, 1.0), Rgb::new(0, 0, 0));
+        assert_eq!(texture.get_color(1.0, 1.0), Rgb::new(0, 0, 255));
     }
 }

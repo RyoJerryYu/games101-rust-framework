@@ -10,7 +10,9 @@ use std::time::{Duration, Instant};
 
 use crate::rasterizer;
 
-pub fn save_image<P: AsRef<Path>>(path: P, data: &[u8], width: u32, height: u32) -> Result<()> {
+pub fn save_image<P: AsRef<Path>>(rst: &impl rasterizer::Rasterizable, path: P) -> Result<()> {
+    let data = rst.data();
+    let (width, height) = rst.size();
     save_buffer(path, data, width, height, ColorType::Rgb8)?;
     Ok(())
 }
