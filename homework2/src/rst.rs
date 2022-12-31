@@ -1,37 +1,10 @@
 use std::collections::HashMap;
 
-use bitflags::bitflags;
 use glam::{IVec2, Mat4, Vec2, Vec3, Vec4};
 use homework2::inside_triangle;
 
-use utils::triangle::{Triangle, Rgb};
-
-bitflags! {
-    pub struct Buffers: u8 {
-        const COLOR = 0x1<<0;
-        const DEPTH = 0x1<<1;
-    }
-}
-
-#[derive(Clone, Copy, PartialEq, Eq)]
-pub enum Primitive {
-    Line,
-    Triangle,
-}
-
-/*
- * For the curious: The draw function takes two buffer id's as its arguments.
- * These two structs make sure that if you mix up with their orders, the
- * compiler won't compile it. Aka : Type safety
- */
-#[derive(Clone, Copy)]
-pub struct PosBufId(u32);
-
-#[derive(Clone, Copy)]
-pub struct IndBufId(u32);
-
-#[derive(Clone, Copy)]
-pub struct ColBufId(u32);
+pub use utils::rasterizer::{Buffers, ColBufId, IndBufId, PosBufId, Primitive, Rasterizable};
+pub use utils::triangle::{Rgb, Triangle};
 
 pub struct Rasterizer {
     model: Mat4,
@@ -50,7 +23,7 @@ pub struct Rasterizer {
     next_id: u32,
 }
 
-impl utils::rasterizer::Rasterizable for Rasterizer {
+impl Rasterizable for Rasterizer {
     fn data(&self) -> &[u8] {
         unsafe {
             std::slice::from_raw_parts(
@@ -178,7 +151,10 @@ impl Rasterizer {
             }
 
             for vert_ind in 0..3 {
-                t.set_vertex(vert_ind, Vec3::new(v[vert_ind].x, v[vert_ind].y, v[vert_ind].z));
+                t.set_vertex(
+                    vert_ind,
+                    Vec3::new(v[vert_ind].x, v[vert_ind].y, v[vert_ind].z),
+                );
                 t.set_color(vert_ind, col[i[vert_ind]]);
             }
 
@@ -328,7 +304,6 @@ impl Rasterizer {
         self.next_id += 1;
         return self.next_id;
     }
-
 }
 
 fn to_vec4(v3: Vec3, w: f32) -> Vec4 {

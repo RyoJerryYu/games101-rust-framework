@@ -3,7 +3,6 @@ use glium::glutin;
 use glutin::event::VirtualKeyCode;
 use homework2::{get_model_matrix, get_projection_matrix, get_view_matrix};
 use utils::graphic::{display_image, save_image, start_loop, Action};
-use utils::rasterizer::Rasterizable;
 
 use glam::Vec3;
 
@@ -36,9 +35,8 @@ fn main() -> Result<()> {
     let col_id = r.load_colors(cols);
 
     start_loop(move |action, display| {
-        let (width, height) = r.size();
         match action {
-            Action::Stop => return save_image("output.png", r.data(), width, height),
+            Action::Stop => return save_image(&r, "output.png"),
             Action::Key(VirtualKeyCode::A) => angle += 10.0,
             Action::Key(VirtualKeyCode::D) => angle -= 10.0,
             _ => (),
