@@ -21,6 +21,16 @@ impl From<&Vec3> for Rgb {
     }
 }
 
+impl From<Rgb> for Vec3 {
+    fn from(rgb: Rgb) -> Self {
+        Self {
+            x: rgb.0 as f32,
+            y: rgb.1 as f32,
+            z: rgb.2 as f32,
+        }
+    }
+}
+
 #[derive(Clone, Copy, Default, Debug)]
 pub struct Triangle {
     // The original coordinates of the triangle,

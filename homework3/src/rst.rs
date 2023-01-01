@@ -1,6 +1,6 @@
-use crate::shader::{self, FragmentShader, Texture, VertexShader};
+use crate::shader::{self, FragmentShader, FragmentShaderPayload, Texture, VertexShader};
 
-use glam::{Mat4, Vec3, Vec4};
+use glam::{Mat4, Vec2, Vec3, Vec4};
 pub use utils::rasterizer::{Buffers, IndBufId, PosBufId, Primitive, Rasterizable};
 
 pub struct Rasterizer {
@@ -75,6 +75,17 @@ impl Rasterizer {
         self.fragment_shader = Some(shader);
     }
 
+    fn set_pixel(&mut self, point: &Vec3, color: &utils::triangle::Rgb) {
+        let (x_range, y_range) = (0..self.width, 0..self.height);
+        let (x, y) = (point.x as u32, point.y as u32);
+        if !(x_range.contains(&x) && y_range.contains(&y)) {
+            return;
+        }
+
+        let ind = (self.height - 1 - y) * self.width + x;
+        self.frame_buf[ind as usize] = *color;
+    }
+
     pub fn clear(&mut self, buffers: Buffers) {
         if buffers.contains(Buffers::COLOR) {
             self.frame_buf.fill(utils::triangle::Rgb(0, 0, 0));
@@ -143,7 +154,73 @@ impl Rasterizer {
     }
 
     fn rasterize_triangle(&mut self, t: utils::triangle::Triangle, view_pos: [Vec3; 3]) {
-        todo!()
+        // get the bounding box of the triangle
+        let mut max_x = 0.0f32;
+        let mut max_y = 0.0f32;
+        let mut min_x = self.width as f32;
+        let mut min_y = self.height as f32;
+
+        for vertex in t.v {
+            max_x = max_x.max(vertex.x);
+            min_x = min_x.min(vertex.y);
+            max_y = max_y.max(vertex.y);
+            min_y = min_y.min(vertex.y);
+        }
+
+        for x in min_x as u32..max_x as u32 {
+            for y in min_y as u32..max_y as u32 {
+                let (xc, yc) = (x as f32 + 0.5, y as f32 + 0.5);
+                if !inside_triangle(xc, yc, &t) {
+                    continue;
+                }
+
+                let [alpha, beta, gama] = compute_barcentric_2d(xc, yc, t.v);
+                let v = t.to_vec4();
+                let barcentric = Vec3::new(alpha, beta, gama);
+                let v_z = Vec3::new(v[0].z, v[1].z, v[2].z);
+                let v_w = Vec3::new(v[0].w, v[1].w, v[2].w);
+                let mut z_interpolated = (barcentric * v_z / v_w).dot(Vec3::ONE);
+                let w_reciprocal = 1. / (barcentric / v_w).dot(Vec3::ONE);
+                z_interpolated *= w_reciprocal;
+
+                if z_interpolated < 0. {
+                    continue;
+                }
+                let buf_ind = ((self.height - 1 - y) * self.width + x) as usize;
+                if z_interpolated > self.depth_buf[buf_ind] {
+                    continue;
+                }
+
+                let interpolated_color = utils::triangle::Rgb::from(
+                    &(alpha * Vec3::from(t.color[0])
+                        + beta * Vec3::from(t.color[1])
+                        + gama * Vec3::from(t.color[2])),
+                );
+
+                let interpolated_normal =
+                    alpha * t.normal[0] + beta * t.normal[1] + gama * t.normal[2];
+
+                let interpolated_texcoords =
+                    alpha * t.tex_coords[0] + beta * t.tex_coords[1] + gama * t.tex_coords[2];
+
+                let interpolated_shadingcoords =
+                    alpha * view_pos[0] + beta * view_pos[1] + gama * view_pos[2];
+
+                let pixel_color = self.fragment_shader.unwrap()(&FragmentShaderPayload {
+                    view_pos: interpolated_shadingcoords,
+                    color: interpolated_color,
+                    normal: interpolated_normal,
+                    tex_coords: interpolated_texcoords,
+                    texture: self.texture,
+                });
+
+                let pixel_color = utils::triangle::Rgb::from(&pixel_color);
+
+                // z_interpolated < self.depth_buf[buf_ind]
+                self.set_pixel(&Vec3::new(xc, yc, z_interpolated), &pixel_color);
+                self.depth_buf[buf_ind] = z_interpolated;
+            }
+        }
         // TODO: From your HW3, get the triangle rasterization code.
         // TODO: Inside your rasterization loop:
         //    * v[i].w() is the vertex view space depth value z.
@@ -169,4 +246,34 @@ impl Rasterizer {
 
 fn to_vec4(v3: &Vec3, w: f32) -> Vec4 {
     Vec4::new(v3.x, v3.y, v3.z, w)
+}
+
+fn inside_triangle(xc: f32, yc: f32, t: &utils::triangle::Triangle) -> bool {
+    let mut v = vec![];
+    for vec in t.v {
+        v.push(Vec3::new(vec.x, vec.y, 1.));
+    }
+
+    let f0 = v[1].cross(v[0]);
+    let f1 = v[2].cross(v[1]);
+    let f2 = v[0].cross(v[2]);
+
+    let p = Vec3::new(xc, yc, 1.);
+
+    return (p.dot(f0) * f0.dot(v[2]) > 0.)
+        && (p.dot(f1) * f1.dot(v[0]) > 0.)
+        && (p.dot(f2) * f2.dot(v[1]) > 0.);
+}
+
+fn compute_barcentric_2d(x: f32, y: f32, v: [Vec3; 3]) -> [f32; 3] {
+    let c1 = (x * (v[1].y - v[2].y) + (v[2].x - v[1].x) * y + v[1].x * v[2].y - v[2].x * v[1].y)
+        / (v[0].x * (v[1].y - v[2].y) + (v[2].x - v[1].x) * v[0].y + v[1].x * v[2].y
+            - v[2].x * v[1].y);
+    let c2 = (x * (v[2].y - v[0].y) + (v[0].x - v[2].x) * y + v[2].x * v[0].y - v[0].x * v[2].y)
+        / (v[1].x * (v[2].y - v[0].y) + (v[0].x - v[2].x) * v[1].y + v[2].x * v[0].y
+            - v[0].x * v[2].y);
+    let c3 = (x * (v[0].y - v[1].y) + (v[1].x - v[0].x) * y + v[0].x * v[1].y - v[1].x * v[0].y)
+        / (v[2].x * (v[0].y - v[1].y) + (v[1].x - v[0].x) * v[2].y + v[0].x * v[1].y
+            - v[1].x * v[0].y);
+    [c1, c2, c3]
 }
