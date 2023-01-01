@@ -21,7 +21,7 @@ impl From<&Vec3> for Rgb {
     }
 }
 
-#[derive(Default)]
+#[derive(Clone, Copy, Default, Debug)]
 pub struct Triangle {
     // The original coordinates of the triangle,
     // v0, v1, v2 in counter clockwise order

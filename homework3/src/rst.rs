@@ -1,6 +1,6 @@
 use crate::shader::{self, FragmentShader, Texture, VertexShader};
 
-use glam::Mat4;
+use glam::{Mat4, Vec3, Vec4};
 pub use utils::rasterizer::{Buffers, IndBufId, PosBufId, Primitive, Rasterizable};
 
 pub struct Rasterizer {
@@ -88,7 +88,85 @@ impl Rasterizer {
         todo!()
     }
 
-    pub fn draw_triangle(&mut self, triangleList: &Vec<utils::triangle::Triangle>) {
-        todo!()
+    pub fn draw_triangle(&mut self, triangle_list: &Vec<utils::triangle::Triangle>) {
+        let f1 = (50. - 0.1) / 2.0;
+        let f2 = (50. + 0.1) / 2.0;
+
+        let mvp = self.projection * self.view * self.model;
+
+        for t in triangle_list {
+            let mut newtri = t.clone();
+            let vertex4 = t.to_vec4();
+            // Vec4
+
+            let mm = &[
+                Vec4::from(self.view * self.model * vertex4[0]),
+                Vec4::from(self.view * self.model * vertex4[1]),
+                Vec4::from(self.view * self.model * vertex4[2]),
+            ];
+
+            let viewspace_pos = &[mm[0].truncate(), mm[1].truncate(), mm[2].truncate()];
+
+            let v = &mut [mvp * vertex4[0], mvp * vertex4[1], mvp * vertex4[2]];
+
+            for vec in v.iter_mut() {
+                *vec = *vec / vec.w
+            }
+
+            let inv_trans = (self.view * self.model).inverse().transpose();
+            let n = &[
+                inv_trans * to_vec4(&t.normal[0], 0.),
+                inv_trans * to_vec4(&t.normal[1], 0.),
+                inv_trans * to_vec4(&t.normal[2], 0.),
+            ];
+
+            for vert in v.iter_mut() {
+                vert.x = 0.5 * self.width as f32 * (vert.x + 1.);
+                vert.y = 0.5 * self.width as f32 * (vert.y + 1.);
+                vert.z = vert.z * f1 + f2;
+            }
+
+            for i in 0..3 {
+                newtri.set_vertex(i, v[i].truncate());
+            }
+
+            for i in 0..3 {
+                newtri.set_normal(i, n[i].truncate());
+            }
+
+            newtri.set_color(0, utils::triangle::Rgb(148, 121, 92));
+            newtri.set_color(1, utils::triangle::Rgb(148, 121, 92));
+            newtri.set_color(2, utils::triangle::Rgb(148, 121, 92));
+
+            self.rasterize_triangle(newtri, *viewspace_pos);
+        }
     }
+
+    fn rasterize_triangle(&mut self, t: utils::triangle::Triangle, view_pos: [Vec3; 3]) {
+        todo!()
+        // TODO: From your HW3, get the triangle rasterization code.
+        // TODO: Inside your rasterization loop:
+        //    * v[i].w() is the vertex view space depth value z.
+        //    * Z is interpolated view space depth for the current pixel
+        //    * zp is depth between zNear and zFar, used for z-buffer
+
+        // float Z = 1.0 / (alpha / v[0].w() + beta / v[1].w() + gamma / v[2].w());
+        // float zp = alpha * v[0].z() / v[0].w() + beta * v[1].z() / v[1].w() + gamma * v[2].z() / v[2].w();
+        // zp *= Z;
+
+        // TODO: Interpolate the attributes:
+        // auto interpolated_color
+        // auto interpolated_normal
+        // auto interpolated_texcoords
+        // auto interpolated_shadingcoords
+
+        // Use: fragment_shader_payload payload( interpolated_color, interpolated_normal.normalized(), interpolated_texcoords, texture ? &*texture : nullptr);
+        // Use: payload.view_pos = interpolated_shadingcoords;
+        // Use: Instead of passing the triangle's color directly to the frame buffer, pass the color to the shaders first to get the final color;
+        // Use: auto pixel_color = fragment_shader(payload);
+    }
+}
+
+fn to_vec4(v3: &Vec3, w: f32) -> Vec4 {
+    Vec4::new(v3.x, v3.y, v3.z, w)
 }
