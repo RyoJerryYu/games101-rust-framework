@@ -33,7 +33,7 @@ impl Texture {
 
 pub struct FragmentShaderPayload {
     pub view_pos: Vec3,
-    pub color: Vec3,
+    pub color: utils::triangle::Rgb,
     pub normal: Vec3,
     pub tex_coords: Vec2,
     pub texture: Option<Texture>,
