@@ -100,10 +100,6 @@ impl Rasterizer {
         }
     }
 
-    pub fn draw(&mut self, primitive: Primitive, pos_buf: PosBufId, ind_buf: IndBufId) {
-        todo!()
-    }
-
     pub fn draw_triangle(&mut self, triangle_list: &Vec<utils::triangle::Triangle>) {
         let f1 = (50. - 0.1) / 2.0;
         let f2 = (50. + 0.1) / 2.0;
@@ -196,11 +192,9 @@ impl Rasterizer {
                     continue;
                 }
 
-                let interpolated_color = utils::triangle::Rgb::from(
-                    &(alpha * Vec3::from(t.color[0])
-                        + beta * Vec3::from(t.color[1])
-                        + gama * Vec3::from(t.color[2])),
-                );
+                let interpolated_color = alpha * Vec3::from(t.color[0])
+                    + beta * Vec3::from(t.color[1])
+                    + gama * Vec3::from(t.color[2]);
 
                 let interpolated_normal =
                     alpha * t.normal[0] + beta * t.normal[1] + gama * t.normal[2];
@@ -216,7 +210,7 @@ impl Rasterizer {
                     color: interpolated_color,
                     normal: interpolated_normal,
                     tex_coords: interpolated_texcoords,
-                    texture: self.texture,
+                    texture: &self.texture,
                 });
 
                 let pixel_color = utils::triangle::Rgb::from(&pixel_color);

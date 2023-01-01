@@ -31,12 +31,12 @@ impl Texture {
     }
 }
 
-pub struct FragmentShaderPayload {
+pub struct FragmentShaderPayload<'a> {
     pub view_pos: Vec3,
-    pub color: utils::triangle::Rgb,
+    pub color: Vec3,
     pub normal: Vec3,
     pub tex_coords: Vec2,
-    pub texture: Option<Texture>,
+    pub texture: &'a Option<Texture>,
 }
 
 pub type FragmentShader = fn(&FragmentShaderPayload) -> Vec3;
