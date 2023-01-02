@@ -1,6 +1,6 @@
 use crate::shader::{self, FragmentShader, FragmentShaderPayload, Texture, VertexShader};
 
-use glam::{Mat4, Vec2, Vec3, Vec4};
+use glam::{Mat4, Vec3, Vec4};
 pub use utils::rasterizer::{Buffers, IndBufId, PosBufId, Primitive, Rasterizable};
 
 pub struct Rasterizer {
@@ -106,7 +106,10 @@ impl Rasterizer {
 
         let mvp = self.projection * self.view * self.model;
 
+        // let mut count = 0;
         for t in triangle_list {
+            // count += 1;
+            // dbg!(triangle_list.len(), count);
             let mut newtri = t.clone();
             let vertex4 = t.to_vec4();
             // Vec4
@@ -157,19 +160,23 @@ impl Rasterizer {
     fn rasterize_triangle(&mut self, t: utils::triangle::Triangle, view_pos: [Vec3; 3]) {
         // get the bounding box of the triangle
         let mut max_x = 0.0f32;
-        let mut max_y = 0.0f32;
         let mut min_x = self.width as f32;
+        let mut max_y = 0.0f32;
         let mut min_y = self.height as f32;
 
         for vertex in t.v {
             max_x = max_x.max(vertex.x);
-            min_x = min_x.min(vertex.y);
+            min_x = min_x.min(vertex.x);
             max_y = max_y.max(vertex.y);
             min_y = min_y.min(vertex.y);
         }
+        let max_x = (max_x as u32).min(self.width);
+        let min_x = (min_x as u32).max(0);
+        let max_y = (max_y as u32).min(self.height);
+        let min_y = (min_y as u32).max(0);
 
-        for x in min_x as u32..max_x as u32 {
-            for y in min_y as u32..max_y as u32 {
+        for x in min_x..max_x {
+            for y in min_y..max_y {
                 let (xc, yc) = (x as f32 + 0.5, y as f32 + 0.5);
                 if !inside_triangle(xc, yc, &t) {
                     continue;
@@ -187,6 +194,7 @@ impl Rasterizer {
                 if z_interpolated < 0. {
                     continue;
                 }
+                // dbg!(self.height, self.width, y, x);
                 let buf_ind = ((self.height - 1 - y) * self.width + x) as usize;
                 if z_interpolated > self.depth_buf[buf_ind] {
                     continue;
