@@ -9,7 +9,7 @@ use homework3::{
 };
 use obj::load_obj;
 use utils::{
-    graphic::{display_image, save_image, Action},
+    graphic::{save_image, Action},
     triangle::Triangle,
 };
 
@@ -68,7 +68,7 @@ fn main() -> Result<()> {
     r.set_vertex_shader(homework3::vertex_shader);
     r.set_fragment_shader(active_shader);
 
-    utils::graphic::start_loop(move |action, display| {
+    utils::graphic::start_loop(move |action, display_image| {
         match action {
             Action::Stop => return save_image(&r, filename),
             Action::Key(VirtualKeyCode::A) => angle += 10.0,
@@ -84,7 +84,7 @@ fn main() -> Result<()> {
         r.draw_triangle(&triangle_list);
 
         dbg!("display_image");
-        return display_image(&r, display);
+        return display_image(&r);
     });
 
     return Ok(());

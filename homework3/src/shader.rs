@@ -101,4 +101,13 @@ mod test {
         assert_eq!(texture.get_color(0.0, 1.0), Rgb::new(0, 0, 0));
         assert_eq!(texture.get_color(1.0, 1.0), Rgb::new(0, 0, 255));
     }
+
+    fn return_closure() -> Box<dyn Fn(i32) -> i32> {
+        let clfn = move |x| x + 1;
+        Box::new(clfn)
+    }
+    #[test]
+    fn test_some() {
+
+    }
 }
