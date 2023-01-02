@@ -15,12 +15,13 @@ use utils::{
 
 fn main() -> Result<()> {
     let mut angle = 140.0;
-    let filename = "input.png";
+    let filename = "output.png";
     let obj_path = "homework3/models/cube/";
+    let obj_file = "cube.obj";
     let mut triangle_list = Vec::new();
 
     let input =
-        std::io::BufReader::new(std::fs::File::open(format!("{}{}", obj_path, "cube.obj"))?);
+        std::io::BufReader::new(std::fs::File::open(format!("{}{}", obj_path, obj_file))?);
     let loadout: obj::Obj<obj::TexturedVertex> = load_obj(input)?;
     dbg!("obj loaded");
 
@@ -29,12 +30,12 @@ fn main() -> Result<()> {
 
         for j in 0..3 {
             dbg!(i, j);
-            let vertice = loadout.vertices[loadout.indices[i + j] as usize];
+            let vertice = &loadout.vertices[loadout.indices[i + j] as usize];
             t.set_vertex(j, Vec3::from_array(vertice.position));
             t.set_normal(j, Vec3::from_array(vertice.normal));
             t.set_tex_coords(j, vertice.texture[0], vertice.texture[1]);
-            triangle_list.push(t);
         }
+        triangle_list.push(t);
     }
 
     dbg!("triangle_list loaded");

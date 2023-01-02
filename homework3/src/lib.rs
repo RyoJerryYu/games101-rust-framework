@@ -58,9 +58,9 @@ pub fn get_model_matrix(angle: f32) -> Mat4 {
 
     let (sin, cos) = (angle * PI / 180.0).sin_cos();
     Mat4::from_cols(
-        Vec4::new(cos, -sin, 0.0, 0.0),
-        Vec4::new(sin, cos, 0.0, 0.0),
-        Vec4::new(0.0, 0.0, 1.0, 0.0),
+        Vec4::new(cos, 0.0, -sin, 0.0),
+        Vec4::new(0.0, 1.0, 0.0, 0.0),
+        Vec4::new(sin, 0.0, cos, 0.0),
         Vec4::new(0.0, 0.0, 0.0, 1.0),
     )
     .transpose()
