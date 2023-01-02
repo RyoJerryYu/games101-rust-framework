@@ -2,53 +2,58 @@ use anyhow::Result;
 use glam::Vec3;
 use glium::glutin::event::VirtualKeyCode;
 use homework3::{
-    bump_fragment_shader, displacement_fragment_shader, get_model_matrix, normal_fragment_shader,
-    phong_fragment_shader, rst,
+    bump_fragment_shader, displacement_fragment_shader, get_model_matrix, get_projection_matrix,
+    get_view_matrix, normal_fragment_shader, phong_fragment_shader, rst,
     shader::{self, FragmentShader},
-    texture_fragment_shader, get_view_matrix, get_projection_matrix,
+    texture_fragment_shader,
 };
 use obj::load_obj;
 use utils::{
     graphic::{display_image, save_image, Action},
-    triangle::{Rgb, Triangle},
+    triangle::Triangle,
 };
 
 fn main() -> Result<()> {
     let mut angle = 140.0;
     let filename = "input.png";
-    let obj_path = "../models/spot/";
+    let obj_path = "homework3/models/cube/";
     let mut triangle_list = Vec::new();
 
-    let input = std::io::BufReader::new(std::fs::File::open("input.obj")?);
-    let loadout: obj::Obj<obj::TexturedVertex, u8> = load_obj(input)?;
+    let input =
+        std::io::BufReader::new(std::fs::File::open(format!("{}{}", obj_path, "cube.obj"))?);
+    let loadout: obj::Obj<obj::TexturedVertex> = load_obj(input)?;
+    dbg!("obj loaded");
 
-    for i in (0..loadout.vertices.len()).step_by(3) {
+    for i in (0..loadout.indices.len()).step_by(3) {
         let mut t = Triangle::new();
+
         for j in 0..3 {
-            t.set_vertex(j, Vec3::from_array(loadout.vertices[i + j].position));
-            t.set_normal(j, Vec3::from_array(loadout.vertices[i + j].normal));
-            t.set_tex_coords(
-                j,
-                loadout.vertices[i + j].texture[0],
-                loadout.vertices[i + j].texture[1],
-            );
+            dbg!(i, j);
+            let vertice = loadout.vertices[loadout.indices[i + j] as usize];
+            t.set_vertex(j, Vec3::from_array(vertice.position));
+            t.set_normal(j, Vec3::from_array(vertice.normal));
+            t.set_tex_coords(j, vertice.texture[0], vertice.texture[1]);
+            triangle_list.push(t);
         }
-        triangle_list.push(t);
     }
+
+    dbg!("triangle_list loaded");
 
     let mut r = rst::Rasterizer::new(700, 700);
 
-    let mut texture_path = "hmap.jpg";
-    r.set_texture(shader::Texture::new(texture_path)?);
+    let mut texture_path = format!("{}{}", obj_path, "rock.png");
+    // r.set_texture(shader::Texture::new(&texture_path)?);
+
+    dbg!("texture loaded");
 
     let mut active_shader: FragmentShader = phong_fragment_shader;
 
-    let use_shader = "texture";
+    let use_shader = "normal";
     match use_shader {
         "texture" => {
             active_shader = texture_fragment_shader;
-            texture_path = "spot_texture.png";
-            r.set_texture(shader::Texture::new(texture_path)?);
+            texture_path = format!("{}{}", obj_path, "spot_texture.png");
+            r.set_texture(shader::Texture::new(&texture_path)?);
         }
         "normal" => active_shader = normal_fragment_shader,
         "phong" => active_shader = phong_fragment_shader,
@@ -73,10 +78,11 @@ fn main() -> Result<()> {
 
         r.set_model(get_model_matrix(angle));
         r.set_view(get_view_matrix(eye_pos));
-        r.set_projection(get_projection_matrix(45., 1.,0.1, 50.));
+        r.set_projection(get_projection_matrix(45., 1., 0.1, 50.));
 
         r.draw_triangle(&triangle_list);
 
+        dbg!("display_image");
         return display_image(&r, display);
     });
 
