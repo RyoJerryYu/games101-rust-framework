@@ -16,10 +16,17 @@ pub fn get_view_matrix(eye_pos: Vec3) -> Mat4 {
 
 pub fn get_model_matrix(rotation_angle: f32) -> Mat4 {
     let (sin, cos) = (rotation_angle * PI / 180.0).sin_cos();
+    // Mat4::from_cols(
+    //     Vec4::new(cos, -sin, 0.0, 0.0),
+    //     Vec4::new(sin, cos, 0.0, 0.0),
+    //     Vec4::new(0.0, 0.0, 1.0, 0.0),
+    //     Vec4::new(0.0, 0.0, 0.0, 1.0),
+    // )
+    // .transpose()
     Mat4::from_cols(
-        Vec4::new(cos, -sin, 0.0, 0.0),
-        Vec4::new(sin, cos, 0.0, 0.0),
-        Vec4::new(0.0, 0.0, 1.0, 0.0),
+        Vec4::new(cos, 0.0, -sin, 0.0),
+        Vec4::new(0.0, 1.0, 0.0, 0.0),
+        Vec4::new(sin, 0.0, cos, 0.0),
         Vec4::new(0.0, 0.0, 0.0, 1.0),
     )
     .transpose()
@@ -39,7 +46,7 @@ pub fn get_projection_matrix(eye_fov: f32, aspect_radio: f32, z_near: f32, z_far
         Vec4::new(z_near, 0.0, 0.0, 0.0),
         Vec4::new(0.0, z_near, 0.0, 0.0),
         Vec4::new(0.0, 0.0, 1.0, 0.0),
-        Vec4::new(0.0, 0.0, -1.0, 0.0),
+        Vec4::new(0.0, 0.0, -1.0, -1.0),
     )
     .transpose();
 

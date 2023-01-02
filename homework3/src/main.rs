@@ -16,8 +16,8 @@ use utils::{
 fn main() -> Result<()> {
     let mut angle = 140.0;
     let filename = "output.png";
-    let obj_path = "homework3/models/cube/";
-    let obj_file = "cube.obj";
+    let obj_path = "homework3/models/spot/";
+    let obj_file = "spot_triangulated_good.obj";
     let mut triangle_list = Vec::new();
 
     let input =

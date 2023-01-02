@@ -71,7 +71,7 @@ pub fn get_projection_matrix(eye_fov: f32, aspect_ratio: f32, z_near: f32, z_far
         Vec4::new(z_near, 0.0, 0.0, 0.0),
         Vec4::new(0.0, z_near, 0.0, 0.0),
         Vec4::new(0.0, 0.0, 1.0, 0.0),
-        Vec4::new(0.0, 0.0, -1.0, 0.0),
+        Vec4::new(0.0, 0.0, -1.0, -1.0),
     )
     .transpose();
 
