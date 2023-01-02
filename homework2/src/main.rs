@@ -10,8 +10,8 @@ mod rst;
 
 fn main() -> Result<()> {
     let mut angle = 0.0f32;
-    // let mut r = rst::Rasterizer::new(700, 700);
     let mut r = rst::Rasterizer::new(700, 700);
+    // let mut r = rst::Rasterizer::new(20, 20);
     let eye_pos = Vec3::new(0.0, 0.0, 5.0);
     let pos = vec![
         Vec3::new(2.0, 0.0, -2.0),

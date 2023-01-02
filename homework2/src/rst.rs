@@ -130,6 +130,7 @@ impl Rasterizer {
         let f2 = (50.0 + 0.1) / 2.0;
 
         let mvp = self.projection * self.view * self.model;
+        // let mvp = self.view * self.model;
         for i in ind {
             let mut t = Triangle::new();
             let mut v = [
