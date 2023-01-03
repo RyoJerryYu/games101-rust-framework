@@ -21,6 +21,10 @@ fn main() -> Result<()> {
     let filename = "output.png";
     let obj_path = "homework3/models/spot/";
     let obj_file = "spot_triangulated_good.obj";
+    // let obj_path = "homework3/models/rock/";
+    // let obj_file = "rock.obj";
+    // let obj_path = "homework3/models/spot/";
+    // let obj_file = "spot_triangulated_good.obj";
     // let obj_path = "homework3/models/cube/";
     // let obj_file = "cube.obj";
     let frame_width = 700;
@@ -34,7 +38,7 @@ fn main() -> Result<()> {
         let mut t = Triangle::new();
 
         for j in 0..3 {
-            dbg!(i, j);
+            // dbg!(i, j);
             let vertice = &loadout.vertices[loadout.indices[i + j] as usize];
             t.set_vertex(j, Vec3::from_array(vertice.position));
             t.set_normal(j, Vec3::from_array(vertice.normal));
