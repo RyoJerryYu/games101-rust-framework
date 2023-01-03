@@ -170,9 +170,9 @@ impl Rasterizer {
             max_y = max_y.max(vertex.y);
             min_y = min_y.min(vertex.y);
         }
-        let max_x = (max_x as u32).min(self.width);
+        let max_x = (max_x as u32 + 1).min(self.width);
         let min_x = (min_x as u32).max(0);
-        let max_y = (max_y as u32).min(self.height);
+        let max_y = (max_y as u32 + 1).min(self.height);
         let min_y = (min_y as u32).max(0);
 
         for x in min_x..max_x {
