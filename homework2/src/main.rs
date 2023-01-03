@@ -34,12 +34,14 @@ fn main() -> Result<()> {
     let ind_id = r.load_indices(ind);
     let col_id = r.load_colors(cols);
 
-    start_loop(move |action, display_image| {
-        match action {
-            Action::Stop => return save_image(&r, "output.png"),
-            Action::Key(VirtualKeyCode::A) => angle += 10.0,
-            Action::Key(VirtualKeyCode::D) => angle -= 10.0,
-            _ => (),
+    start_loop(move |actions, display_image| {
+        for action in actions {
+            match action {
+                Action::Stop => return save_image(&r, "output.png"),
+                Action::Key(VirtualKeyCode::A) => angle += 10.0,
+                Action::Key(VirtualKeyCode::D) => angle -= 10.0,
+                _ => (),
+            }
         }
         r.clear(rst::Buffers::all());
         r.set_model(get_model_matrix(angle));

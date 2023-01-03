@@ -1,5 +1,5 @@
 use anyhow::Result;
-use glium::glutin::event::Event;
+use glium::glutin::event::{Event, StartCause};
 use glium::glutin::event_loop::ControlFlow;
 use glium::index::PrimitiveType;
 use glium::{glutin, implement_vertex, program, uniform, Display, Surface};
@@ -153,7 +153,7 @@ type DisplayImage = Box<dyn Fn(&dyn rasterizer::Rasterizable) -> Result<()>>;
 
 pub fn start_loop<F>(mut callback: F)
 where
-    F: 'static + FnMut(&Action, &DisplayImage) -> Result<()>,
+    F: 'static + FnMut(&Vec<Action>, &DisplayImage) -> Result<()>,
 {
     let event_loop = glutin::event_loop::EventLoop::new();
     let wb = glutin::window::WindowBuilder::new();
@@ -295,10 +295,24 @@ where
             Ok(())
         });
 
+    let mut action_buffer = Vec::new();
+    let mut next_frame_time = Instant::now();
+
     event_loop.run(move |event, _, ctrl_flow| {
-        *ctrl_flow = ControlFlow::WaitUntil(Instant::now() + Duration::from_nanos(16_666_667));
+        *ctrl_flow = ControlFlow::WaitUntil(next_frame_time);
 
         let action = match event {
+            Event::NewEvents(cause) => match cause {
+                StartCause::ResumeTimeReached { .. } | StartCause::Init => {
+                    callback(&action_buffer, &display_image).expect("rendering failed");
+                    action_buffer.clear();
+
+                    next_frame_time = Instant::now() + Duration::from_nanos(16666667);
+                    *ctrl_flow = ControlFlow::WaitUntil(next_frame_time);
+                    return;
+                }
+                _ => Action::Idle,
+            },
             Event::WindowEvent {
                 event: WindowEvent::CloseRequested,
                 ..
@@ -322,10 +336,9 @@ where
             _ => Action::Idle,
         };
 
-        callback(&action, &display_image).expect("rendering failed");
         match action {
             Action::Stop => *ctrl_flow = ControlFlow::Exit,
-            _ => (),
+            _ => action_buffer.push(action),
         }
     })
 }
