@@ -84,8 +84,8 @@ fn main() -> Result<()> {
                     save_image(&r, filename)?;
                     anyhow::bail!("stop");
                 }
-                Action::Key(VirtualKeyCode::A) => angle += 10.0,
-                Action::Key(VirtualKeyCode::D) => angle -= 10.0,
+                Action::Key(VirtualKeyCode::A) => angle -= 10.0,
+                Action::Key(VirtualKeyCode::D) => angle += 10.0,
                 Action::Key(VirtualKeyCode::W) => scale += 0.1,
                 Action::Key(VirtualKeyCode::S) => scale -= 0.1,
                 _ => (),
