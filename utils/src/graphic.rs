@@ -304,11 +304,18 @@ where
         let action = match event {
             Event::NewEvents(cause) => match cause {
                 StartCause::ResumeTimeReached { .. } | StartCause::Init => {
-                    callback(&action_buffer, &display_image).expect("rendering failed");
-                    action_buffer.clear();
+                    *ctrl_flow = match callback(&action_buffer, &display_image) {
+                        Ok(_) => {
+                            action_buffer.clear();
 
-                    next_frame_time = Instant::now() + Duration::from_nanos(16666667);
-                    *ctrl_flow = ControlFlow::WaitUntil(next_frame_time);
+                            next_frame_time = Instant::now() + Duration::from_nanos(16666667);
+                            ControlFlow::WaitUntil(next_frame_time)
+                        }
+                        Err(e) => {
+                            eprintln!("Error: {}", e);
+                            ControlFlow::Exit
+                        }
+                    };
                     return;
                 }
                 _ => Action::Idle,
@@ -336,10 +343,7 @@ where
             _ => Action::Idle,
         };
 
-        match action {
-            Action::Stop => *ctrl_flow = ControlFlow::Exit,
-            _ => action_buffer.push(action),
-        }
+        action_buffer.push(action);
     })
 }
 
