@@ -16,7 +16,7 @@ use utils::{
 fn main() -> Result<()> {
     // let mut angle = 140.0;
     let mut angle = 140.0;
-    let mut scale = 1.0;
+    let mut scale = 2.5;
     // let mut scale = 10.0;
     let filename = "output.png";
     let obj_path = "homework3/models/spot/";
@@ -80,7 +80,10 @@ fn main() -> Result<()> {
     utils::graphic::start_loop(move |actions, display_image| {
         for action in actions {
             match action {
-                Action::Stop => return save_image(&r, filename),
+                Action::Stop => {
+                    save_image(&r, filename)?;
+                    anyhow::bail!("stop");
+                }
                 Action::Key(VirtualKeyCode::A) => angle += 10.0,
                 Action::Key(VirtualKeyCode::D) => angle -= 10.0,
                 Action::Key(VirtualKeyCode::W) => scale += 0.1,
