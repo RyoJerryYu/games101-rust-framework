@@ -93,14 +93,20 @@ pub fn get_projection_matrix(eye_fov: f32, aspect_ratio: f32, z_near: f32, z_far
     /*
      * m2: mapping the cube{-dx..dx, -dy..dy, znear..zfar} to the cube{-1..1, -1..1, 0..1}
      * eye_fov = 2 * atan(dx / |z_near| )// but z_near is negative!!!
-     * TODO: write someting
+     * aspect_ratio = dy / dx
      */
 
+    // make sure delta_x, delta_y, delta_z are positive
+    // center_z is negative, but that's exactly what representing the center z position
     let delta_x = -z_near * (eye_fov * PI / 2.0 / 180.0).tan();
     let delta_y = delta_x * aspect_ratio;
     let delta_z = (z_near - z_far) / 2.0;
     let center_z = (z_near + delta_z) / 2.0;
 
+    // m2 is a multiplication of 2 matrixs:
+    // 1. first translate the center point (0,0,center_z) to (0,0,0)
+    //    note that moving vector is (0,0,-center_z), that's wy the line3 should multiple negative
+    // 2. then scalling Cube(2dx, 2dy, 2dz) to Cube(2, 2, 2)
     let m2 = Mat4::from_cols(
         Vec4::new(1.0 / delta_x, 0.0, 0.0, 0.0),
         Vec4::new(0.0, 1.0 / delta_y, 0.0, 0.0),
