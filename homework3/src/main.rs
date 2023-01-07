@@ -20,6 +20,7 @@ fn main() -> Result<()> {
     let filename = "output.png";
     let obj_path = "homework3/models/spot/";
     let obj_file = "spot_triangulated_good.obj";
+    let texture_file = "spot_texture.png";
     // let obj_path = "homework3/models/rock/";
     // let obj_file = "rock.obj";
     // let obj_path = "homework3/models/spot/";
@@ -50,7 +51,7 @@ fn main() -> Result<()> {
 
     let mut r = rst::Rasterizer::new(frame_width, frame_width);
 
-    let mut texture_path = format!("{}{}", obj_path, "rock.png");
+    // let mut texture_path = format!("{}{}", obj_path, "rock.png");
     // r.set_texture(shader::Texture::new(&texture_path)?);
 
     dbg!("texture loaded");
@@ -58,11 +59,12 @@ fn main() -> Result<()> {
     let mut active_shader: FragmentShader = phong_fragment_shader;
 
     // let use_shader = "normal";
-    let use_shader = "phong";
+    // let use_shader = "phong";
+    let use_shader = "texture";
     match use_shader {
         "texture" => {
             active_shader = texture_fragment_shader;
-            texture_path = format!("{}{}", obj_path, "spot_texture.png");
+            let texture_path = format!("{}{}", obj_path, texture_file);
             r.set_texture(shader::Texture::new(&texture_path)?);
         }
         "normal" => active_shader = normal_fragment_shader,
