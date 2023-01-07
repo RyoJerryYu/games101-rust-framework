@@ -13,7 +13,7 @@ use utils::{
 };
 
 fn main() -> Result<()> {
-    // let mut angle = 140.0;
+    // let mut angle = 0.0;
     let mut angle = 140.0;
     let mut scale = 2.5;
     // let mut scale = 10.0;
@@ -57,7 +57,8 @@ fn main() -> Result<()> {
 
     let mut active_shader: FragmentShader = phong_fragment_shader;
 
-    let use_shader = "normal";
+    // let use_shader = "normal";
+    let use_shader = "phong";
     match use_shader {
         "texture" => {
             active_shader = texture_fragment_shader;
