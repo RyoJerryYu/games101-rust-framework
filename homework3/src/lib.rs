@@ -172,7 +172,7 @@ pub fn texture_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 
         intensity: Vec3::ONE * 500.,
     };
     let l2 = Light {
-        position: Vec3::new(-20., -20., 0.),
+        position: Vec3::new(-20., 20., 0.),
         intensity: Vec3::ONE * 500.,
     };
 
@@ -184,15 +184,30 @@ pub fn texture_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 
 
     let color = texture_color;
     let point = payload.view_pos;
-    let normal = payload.normal;
+    let normal = payload.normal.normalize();
     let mut result_color = Vec3::ZERO;
 
     for light in lights {
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
         // components are. Then, accumulate that result on the *result_color* object.
-        todo!()
+
+        // ambient 环境光
+        // diffuse 散射
+        // specular 镜面反射
+
+        let light_dir = light.position - point; // light_dir represent a vector from shading point to light position
+        let eye_dir = eye_pos - point; // eye_dir represent a vector from shading point to eye position
+        let reg_light_intensity = light.intensity / light_dir.dot(light_dir); // I/(r^2) , represent the energy arrived shading point
+
+        // let kd = kd * 0.0;
+        // let ks = ks * 0.0;
+        let la = ka * amb_light_intensity;
+        let ld = kd * reg_light_intensity * light_dir.normalize().dot(normal).max(0.0);
+        let ls = ks * reg_light_intensity * (light_dir + eye_dir).normalize().dot(normal).max(0.0).powf(p);
+
+        result_color += la + ld + ls;
     }
-    result_color
+    result_color * 255.0
 }
 
 pub fn phong_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
