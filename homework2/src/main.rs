@@ -1,8 +1,6 @@
 use anyhow::Result;
-use glium::glutin;
-use glutin::event::VirtualKeyCode;
 use homework2::{get_model_matrix, get_projection_matrix, get_view_matrix};
-use utils::graphic::{save_image, start_loop, Action, Control};
+use utils::graphic::{save_image, start_loop, Action, Control, Key};
 
 use glam::Vec3;
 
@@ -41,8 +39,8 @@ fn main() -> Result<()> {
                     save_image(&r, "output.png")?;
                     return Ok(Control::Stop);
                 }
-                Action::Key(VirtualKeyCode::A) => angle += 10.0,
-                Action::Key(VirtualKeyCode::D) => angle -= 10.0,
+                Action::Key(Key::A) => angle += 10.0,
+                Action::Key(Key::D) => angle -= 10.0,
                 _ => (),
             }
         }

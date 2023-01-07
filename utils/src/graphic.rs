@@ -215,10 +215,12 @@ where
     })
 }
 
+pub type Key = VirtualKeyCode;
+
 pub enum Action {
     Idle,
     Stop,
-    Key(VirtualKeyCode),
+    Key(Key),
 }
 
 pub enum Control {
