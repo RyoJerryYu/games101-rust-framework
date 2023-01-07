@@ -61,11 +61,11 @@ pub fn get_model_matrix(angle: f32, scale: f32) -> Mat4 {
 /**
  * get_projection_matrix: build the projection matrix
  * for projecting the 3D world x(1..-1), y(1..-1), z(-1..1) cube.
- * 
+ *
  * this matrix do 2 things and is a multiplication of 2 matrices:
  * 1. map the eye coordinates pyramid frustum to the cube{-dx..dx, -dy..dy, znear..zfar}
  * 2. map the cube{-dx..dx, -dy..dy, znear..zfar} to the cube{-1..1, -1..1, -1..1}
- * 
+ *
  * @eye_fov: the angle of the eye field of view, in degree
  * @aspect_ratio: the aspect ratio of the screen, height / width
  * @z_near: the near plane of the eye coordinates pyramid frustum
@@ -156,6 +156,7 @@ pub fn texture_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 
     let mut return_color = Vec3::new(0.0, 0.0, 0.0);
     if payload.texture.is_some() {
         todo!()
+        // TODO: Get the texture value at the texture coordinates of the current fragment
     }
     let mut texture_color = Vec3::new(return_color.x, return_color.y, return_color.z);
 
@@ -185,6 +186,8 @@ pub fn texture_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 
 
     for light in lights {
         todo!()
+        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
+        // components are. Then, accumulate that result on the *result_color* object.
     }
     result_color
 }
@@ -216,6 +219,8 @@ pub fn phong_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
     let mut result_color = Vec3::ZERO;
     for light in lights {
         todo!()
+        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
+        // components are. Then, accumulate that result on the *result_color* object.
     }
 
     result_color * 255.
@@ -246,10 +251,24 @@ pub fn displacement_fragment_shader(payload: &shader::FragmentShaderPayload) -> 
     let normal = payload.normal;
 
     let (kh, kn) = (0.2, 0.1);
+
+    // TODO: Implement displacement mapping here
+    // Let n = normal = (x, y, z)
+    // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
+    // Vector b = n cross product t
+    // Matrix TBN = [t b n]
+    // dU = kh * kn * (h(u+1/w,v)-h(u,v))
+    // dV = kh * kn * (h(u,v+1/h)-h(u,v))
+    // Vector ln = (-dU, -dV, 1)
+    // Position p = p + kn * n * h(u,v)
+    // Normal n = normalize(TBN * ln)
+
     let mut result_color = Vec3::ZERO;
 
     for light in lights {
         todo!()
+        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
+        // components are. Then, accumulate that result on the *result_color* object.
     }
     result_color * 255.
 }
@@ -279,7 +298,17 @@ pub fn bump_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
     let normal = payload.normal;
 
     let (kh, kn) = (0.2, 0.1);
+
     todo!();
+    // TODO: Implement bump mapping here
+    // Let n = normal = (x, y, z)
+    // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
+    // Vector b = n cross product t
+    // Matrix TBN = [t b n]
+    // dU = kh * kn * (h(u+1/w,v)-h(u,v))
+    // dV = kh * kn * (h(u,v+1/h)-h(u,v))
+    // Vector ln = (-dU, -dV, 1)
+    // Normal n = normalize(TBN * ln)
 
     let mut result_color = Vec3::ZERO;
     result_color = normal;
