@@ -2,7 +2,7 @@ use anyhow::Result;
 use glium::glutin;
 use glutin::event::VirtualKeyCode;
 use homework2::{get_model_matrix, get_projection_matrix, get_view_matrix};
-use utils::graphic::{save_image, start_loop, Action};
+use utils::graphic::{save_image, start_loop, Action, Control};
 
 use glam::Vec3;
 
@@ -37,7 +37,10 @@ fn main() -> Result<()> {
     start_loop(move |actions, display_image| {
         for action in actions {
             match action {
-                Action::Stop => return save_image(&r, "output.png"),
+                Action::Stop => {
+                    save_image(&r, "output.png")?;
+                    return Ok(Control::Stop);
+                }
                 Action::Key(VirtualKeyCode::A) => angle += 10.0,
                 Action::Key(VirtualKeyCode::D) => angle -= 10.0,
                 _ => (),
@@ -48,7 +51,8 @@ fn main() -> Result<()> {
         r.set_view(get_view_matrix(eye_pos));
         r.set_projection(get_projection_matrix(45.0, 1.0, 0.1, 50.0));
         r.draw(pos_id, ind_id, col_id, rst::Primitive::Triangle);
-        return display_image(&r);
+        display_image(&r)?;
+        Ok(Control::Continue)
     });
     Ok(())
 }
