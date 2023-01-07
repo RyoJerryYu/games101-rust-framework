@@ -1,6 +1,5 @@
 use anyhow::Result;
 use glam::Vec3;
-use glium::glutin::event::VirtualKeyCode;
 use homework3::{
     bump_fragment_shader, displacement_fragment_shader, get_model_matrix, get_projection_matrix,
     get_view_matrix, normal_fragment_shader, phong_fragment_shader, rst,
@@ -9,7 +8,7 @@ use homework3::{
 };
 use obj::load_obj;
 use utils::{
-    graphic::{save_image, Action, Control},
+    graphic::{save_image, Action, Control, Key},
     triangle::Triangle,
 };
 
@@ -84,10 +83,10 @@ fn main() -> Result<()> {
                     save_image(&r, filename)?;
                     return Ok(Control::Stop);
                 }
-                Action::Key(VirtualKeyCode::A) => angle -= 10.0,
-                Action::Key(VirtualKeyCode::D) => angle += 10.0,
-                Action::Key(VirtualKeyCode::W) => scale += 0.1,
-                Action::Key(VirtualKeyCode::S) => scale -= 0.1,
+                Action::Key(Key::A) => angle -= 10.0,
+                Action::Key(Key::D) => angle += 10.0,
+                Action::Key(Key::W) => scale += 0.1,
+                Action::Key(Key::S) => scale -= 0.1,
                 _ => (),
             }
         }
