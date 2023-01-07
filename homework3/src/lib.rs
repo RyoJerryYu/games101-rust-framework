@@ -60,7 +60,17 @@ pub fn get_model_matrix(angle: f32, scale: f32) -> Mat4 {
 
 /**
  * get_projection_matrix: build the projection matrix
- *
+ * for projecting the 3D world x(1..-1), y(1..-1), z(-1..1) cube.
+ * 
+ * this matrix do 2 things and is a multiplication of 2 matrices:
+ * 1. map the eye coordinates pyramid frustum to the cube{-dx..dx, -dy..dy, znear..zfar}
+ * 2. map the cube{-dx..dx, -dy..dy, znear..zfar} to the cube{-1..1, -1..1, -1..1}
+ * 
+ * @eye_fov: the angle of the eye field of view, in degree
+ * @aspect_ratio: the aspect ratio of the screen, height / width
+ * @z_near: the near plane of the eye coordinates pyramid frustum
+ * @z_far: the far plane of the eye coordinates pyramid frustum
+ * return: the projection matrix
  */
 pub fn get_projection_matrix(eye_fov: f32, aspect_ratio: f32, z_near: f32, z_far: f32) -> Mat4 {
     /*
@@ -91,7 +101,7 @@ pub fn get_projection_matrix(eye_fov: f32, aspect_ratio: f32, z_near: f32, z_far
     .transpose();
 
     /*
-     * m2: mapping the cube{-dx..dx, -dy..dy, znear..zfar} to the cube{-1..1, -1..1, 0..1}
+     * m2: mapping the cube{-dx..dx, -dy..dy, znear..zfar} to the cube{-1..1, -1..1, -1..1}
      * eye_fov = 2 * atan(dx / |z_near| )// but z_near is negative!!!
      * aspect_ratio = dy / dx
      */
