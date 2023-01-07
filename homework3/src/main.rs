@@ -9,7 +9,7 @@ use homework3::{
 };
 use obj::load_obj;
 use utils::{
-    graphic::{save_image, Action},
+    graphic::{save_image, Action, Control},
     triangle::Triangle,
 };
 
@@ -82,7 +82,7 @@ fn main() -> Result<()> {
             match action {
                 Action::Stop => {
                     save_image(&r, filename)?;
-                    anyhow::bail!("stop");
+                    return Ok(Control::Stop);
                 }
                 Action::Key(VirtualKeyCode::A) => angle -= 10.0,
                 Action::Key(VirtualKeyCode::D) => angle += 10.0,
@@ -100,7 +100,8 @@ fn main() -> Result<()> {
         r.draw_triangle(&triangle_list);
 
         dbg!("display_image");
-        return display_image(&r);
+        display_image(&r)?;
+        return Ok(Control::Continue);
     });
 
     return Ok(());
