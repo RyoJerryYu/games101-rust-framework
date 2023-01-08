@@ -86,7 +86,7 @@ fn main() -> Result<()> {
 
     dbg!("texture loaded");
 
-    utils::graphic::start_loop(move |actions, display_image| {
+    utils::graphic::start_loop(frame_width, frame_width, move |actions, display_image| {
         for action in actions {
             match action {
                 Action::Stop => {
