@@ -3,7 +3,7 @@ pub mod shader;
 
 use std::f32::consts::PI;
 
-use glam::{Mat4, Vec3, Vec4};
+use glam::{Mat3, Mat4, Vec3, Vec4};
 
 /**
  * for every vertex on the model, should transform:
@@ -132,14 +132,8 @@ pub fn vertex_shader(payload: &shader::VertexShaderPayload) -> Vec3 {
 }
 
 pub fn normal_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
-    let return_color = payload.normal.normalize() + Vec3::new(1.0, 1.0, 1.0) / 2.0;
-    let result = Vec3::from_array([
-        return_color.x * 255.,
-        return_color.y * 255.,
-        return_color.z * 255.,
-    ]);
-
-    result
+    let return_color = (payload.normal.normalize() + Vec3::ONE) / 2.0;
+    return_color * 255.0
 }
 
 fn reflect(vec: Vec3, axis: Vec3) -> Vec3 {
@@ -203,7 +197,13 @@ pub fn texture_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 
         // let ks = ks * 0.0;
         let la = ka * amb_light_intensity;
         let ld = kd * reg_light_intensity * light_dir.normalize().dot(normal).max(0.0);
-        let ls = ks * reg_light_intensity * (light_dir + eye_dir).normalize().dot(normal).max(0.0).powf(p);
+        let ls = ks
+            * reg_light_intensity
+            * (light_dir + eye_dir)
+                .normalize()
+                .dot(normal)
+                .max(0.0)
+                .powf(p);
 
         result_color += la + ld + ls;
     }
@@ -251,7 +251,13 @@ pub fn phong_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
         // let ks = ks * 0.0;
         let la = ka * amb_light_intensity;
         let ld = kd * reg_light_intensity * light_dir.normalize().dot(normal).max(0.0);
-        let ls = ks * reg_light_intensity * (light_dir + eye_dir).normalize().dot(normal).max(0.0).powf(p);
+        let ls = ks
+            * reg_light_intensity
+            * (light_dir + eye_dir)
+                .normalize()
+                .dot(normal)
+                .max(0.0)
+                .powf(p);
 
         result_color += la + ld + ls;
     }
@@ -328,11 +334,10 @@ pub fn bump_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
 
     let color = payload.color;
     let point = payload.view_pos;
-    let normal = payload.normal;
+    let normal = payload.normal.normalize();
 
     let (kh, kn) = (0.2, 0.1);
 
-    todo!();
     // TODO: Implement bump mapping here
     // Let n = normal = (x, y, z)
     // Vector t = (x*y/sqrt(x*x+z*z),sqrt(x*x+z*z),z*y/sqrt(x*x+z*z))
@@ -343,10 +348,52 @@ pub fn bump_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
     // Vector ln = (-dU, -dV, 1)
     // Normal n = normalize(TBN * ln)
 
-    let mut result_color = Vec3::ZERO;
-    result_color = normal;
+    // n represent the normal dir caculated on that point from mesh vertex.
+    // t represent the tangent dir which have same xz direction as n.
+    // b represent the dir which perpendicular to both n and t.
+    let t = {
+        let xz_length = (normal.x * normal.x + normal.z * normal.z).sqrt();
+        Vec3::new(
+            -normal.x * normal.y / xz_length,
+            xz_length,
+            -normal.z * normal.y / xz_length,
+        )
+    };
+    let b = normal.cross(t);
 
-    result_color * 255.
+    // n, t, b should perpendicular to each other, and all of them should be normalized.
+    // so |TBN| should equal to 1
+    let tbn = Mat3::from_cols(t, b, normal);
+
+    // h_uv => h(u,v) , h_u1v => h(u+1,v) , h_uv1 => h(u,v+1)
+    let (h_uv, h_u1v, h_uv1) = {
+        let texture = payload.texture.as_ref().unwrap();
+        // don't know why hmap have color, and what each r,g,b means...
+        // fix: https://games-cn.org/forums/topic/%e4%bd%9c%e4%b8%9a3%e6%9b%b4%e6%ad%a3%e5%85%ac%e5%91%8a/
+        // belong to that, h(u,v) = texture_color(u,v).norm() (a.k.a the length of vector of color)
+
+        // becouse texture.get_color recieve a (u,v) in (0..1, 0..1)
+        // so move one texel on texture should not use (u+1,v) but (u+1/w,v)
+        let (u, v) = (payload.tex_coords.x, payload.tex_coords.y);
+        let (w, h) = (texture.width as f32, texture.height as f32);
+
+        let h_uv: Vec3 = texture.get_color(u, v).into();
+        let h_u1v: Vec3 = texture.get_color(u + 1.0 / w, v).into();
+        let h_uv1: Vec3 = texture.get_color(u, v + 1.0 / h).into();
+        (h_uv.length(), h_u1v.length(), h_uv1.length())
+    };
+
+    let du = kh * kn * (h_u1v - h_uv);
+    let dv = kh * kn * (h_uv1 - h_uv);
+    let ln = Vec3::new(-du, -dv, 1.0).normalize();
+    let normal = (tbn * ln).normalize();
+
+    // well, don't know why not concerning the negative value of normal...
+    // I would prefer to set result color as this:
+    // let result_color = (normal + Vec3::ONE) / 2.0;
+    let result_color = normal;
+
+    result_color * 255.0
 }
 
 #[cfg(test)]

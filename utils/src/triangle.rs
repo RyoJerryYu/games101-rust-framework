@@ -17,7 +17,11 @@ impl From<&image::Rgb<u8>> for Rgb {
 
 impl From<&Vec3> for Rgb {
     fn from(i: &Vec3) -> Self {
-        Self(i.x as u8, i.y as u8, i.z as u8)
+        let r = (i.x as u8).clamp(0, 255);
+        let g = (i.y as u8).clamp(0, 255);
+        let b = (i.z as u8).clamp(0, 255);
+
+        Self(r, g, b)
     }
 }
 
