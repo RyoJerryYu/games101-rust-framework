@@ -78,12 +78,15 @@ fn main() -> Result<()> {
                 Action::Key(Key::D) => angle += 10.0,
                 Action::Key(Key::W) => scale += 0.1,
                 Action::Key(Key::S) => scale -= 0.1,
-                Action::Key(k) if matches!(k, Key::Key1 | Key::Key2 | Key::Key3 | Key::Key4) => {
+                Action::Key(k)
+                    if matches!(k, Key::Key1 | Key::Key2 | Key::Key3 | Key::Key4 | Key::Key5) =>
+                {
                     let use_shader = match k {
                         Key::Key1 => UseShader::Normal,
                         Key::Key2 => UseShader::Phong,
                         Key::Key3 => UseShader::Texture,
                         Key::Key4 => UseShader::Bump,
+                        Key::Key5 => UseShader::Displacement,
                         _ => panic!(),
                     };
                     set_fragment_shader(&mut r, use_shader, obj_path, texture_file, hmap_file)?;
@@ -135,7 +138,11 @@ fn set_fragment_shader(
             r.set_texture(shader::Texture::new(&texture_path)?);
             bump_fragment_shader
         }
-        UseShader::Displacement => displacement_fragment_shader,
+        UseShader::Displacement => {
+            let texture_path = format!("{}{}", obj_path, hmap_file);
+            r.set_texture(shader::Texture::new(&texture_path)?);
+            displacement_fragment_shader
+        }
         _ => normal_fragment_shader,
     };
     r.set_fragment_shader(active_shader);
