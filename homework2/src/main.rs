@@ -32,7 +32,7 @@ fn main() -> Result<()> {
     let ind_id = r.load_indices(ind);
     let col_id = r.load_colors(cols);
 
-    start_loop(move |actions, display_image| {
+    start_loop(700, 700, move |actions, display_image| {
         for action in actions {
             match action {
                 Action::Stop => {

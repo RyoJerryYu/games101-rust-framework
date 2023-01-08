@@ -1,5 +1,5 @@
 use anyhow::Result;
-use glium::glutin::dpi::PhysicalPosition;
+use glium::glutin::dpi::{PhysicalPosition, PhysicalSize};
 use glium::glutin::event_loop::ControlFlow;
 use glium::index::PrimitiveType;
 use glium::{glutin, implement_vertex, program, uniform, Surface};
@@ -20,12 +20,12 @@ pub fn save_image<P: AsRef<Path>>(rst: &impl rasterizer::Rasterizable, path: P) 
 
 type DisplayImage = Box<dyn Fn(&dyn rasterizer::Rasterizable) -> Result<()>>;
 
-pub fn start_loop<F>(mut callback: F)
+pub fn start_loop<F>(width: u32, height: u32, mut callback: F)
 where
     F: 'static + FnMut(&Vec<Action>, &DisplayImage) -> Result<Control>,
 {
     let event_loop = glutin::event_loop::EventLoop::new();
-    let wb = glutin::window::WindowBuilder::new();
+    let wb = glutin::window::WindowBuilder::new().with_inner_size(PhysicalSize::new(width,height));
     let cb = glutin::ContextBuilder::new().with_vsync(true);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
