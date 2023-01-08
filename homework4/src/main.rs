@@ -1,6 +1,6 @@
 use anyhow::Ok;
 use glam::Vec2;
-use homework4::rst;
+use homework4::{rst, naive_bezier};
 use utils::graphic::{save_image, Action, Control};
 
 fn main() {
@@ -39,7 +39,9 @@ fn main() {
         for p in &control_points {
             r.draw_circle(*p, 10.0);
         }
-        // if len > 4 , draw bezier
+        if control_points.len() >= 4 {
+            naive_bezier(&mut r, &control_points);
+        }
         display_image(&r)?;
 
         Ok(Control::Continue)
