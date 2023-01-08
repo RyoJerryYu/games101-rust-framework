@@ -2,8 +2,7 @@ use anyhow::Result;
 use glam::Vec3;
 use homework3::{
     bump_fragment_shader, displacement_fragment_shader, get_model_matrix, get_projection_matrix,
-    get_view_matrix, normal_fragment_shader, phong_fragment_shader, rst,
-    shader::{self, FragmentShader},
+    get_view_matrix, normal_fragment_shader, phong_fragment_shader, rst, shader,
     texture_fragment_shader,
 };
 use obj::load_obj;
@@ -21,6 +20,8 @@ fn main() -> Result<()> {
     let obj_path = "homework3/models/spot/";
     let obj_file = "spot_triangulated_good.obj";
     let texture_file = "spot_texture.png";
+    // let texture_file = "hmap.jpg";
+    let hmap_file = "hmap.jpg";
     // let obj_path = "homework3/models/rock/";
     // let obj_file = "rock.obj";
     // let obj_path = "homework3/models/spot/";
@@ -54,17 +55,17 @@ fn main() -> Result<()> {
     // let mut texture_path = format!("{}{}", obj_path, "rock.png");
     // r.set_texture(shader::Texture::new(&texture_path)?);
 
-    dbg!("texture loaded");
-
-    // let use_shader = UseShader::Normal;
-    // let use_shader = UseShader::Phong;
-
     let eye_pos = Vec3::new(0.0, 0.0, 10.0);
 
     r.set_vertex_shader(homework3::vertex_shader);
 
-    let use_shader = UseShader::Texture;
-    set_fragment_shader(&mut r, use_shader, obj_path, texture_file)?;
+    // let use_shader = UseShader::Normal;
+    // let use_shader = UseShader::Phong;
+    // let use_shader = UseShader::Texture;
+    let use_shader = UseShader::Bump;
+    set_fragment_shader(&mut r, use_shader, obj_path, texture_file, hmap_file)?;
+
+    dbg!("texture loaded");
 
     utils::graphic::start_loop(move |actions, display_image| {
         for action in actions {
@@ -77,14 +78,15 @@ fn main() -> Result<()> {
                 Action::Key(Key::D) => angle += 10.0,
                 Action::Key(Key::W) => scale += 0.1,
                 Action::Key(Key::S) => scale -= 0.1,
-                Action::Key(k @ Key::Key1 | k @ Key::Key2 | k @ Key::Key3) => {
+                Action::Key(k) if matches!(k, Key::Key1 | Key::Key2 | Key::Key3 | Key::Key4) => {
                     let use_shader = match k {
                         Key::Key1 => UseShader::Normal,
                         Key::Key2 => UseShader::Phong,
                         Key::Key3 => UseShader::Texture,
+                        Key::Key4 => UseShader::Bump,
                         _ => panic!(),
                     };
-                    set_fragment_shader(&mut r, use_shader, obj_path, texture_file)?;
+                    set_fragment_shader(&mut r, use_shader, obj_path, texture_file, hmap_file)?;
                 }
                 _ => (),
             }
@@ -118,6 +120,7 @@ fn set_fragment_shader(
     use_shader: UseShader,
     obj_path: &str,
     texture_file: &str,
+    hmap_file: &str,
 ) -> Result<()> {
     let active_shader = match use_shader {
         UseShader::Texture => {
@@ -127,7 +130,11 @@ fn set_fragment_shader(
         }
         UseShader::Normal => normal_fragment_shader,
         UseShader::Phong => phong_fragment_shader,
-        UseShader::Bump => bump_fragment_shader,
+        UseShader::Bump => {
+            let texture_path = format!("{}{}", obj_path, hmap_file);
+            r.set_texture(shader::Texture::new(&texture_path)?);
+            bump_fragment_shader
+        }
         UseShader::Displacement => displacement_fragment_shader,
         _ => normal_fragment_shader,
     };
