@@ -1,9 +1,10 @@
 use anyhow::Result;
-use glium::glutin::event::{Event, StartCause};
+use glium::glutin::dpi::PhysicalPosition;
 use glium::glutin::event_loop::ControlFlow;
 use glium::index::PrimitiveType;
 use glium::{glutin, implement_vertex, program, uniform, Surface};
 use glutin::event::{ElementState, KeyboardInput, VirtualKeyCode, WindowEvent};
+use glutin::event::{Event, MouseButton, StartCause};
 use image::{save_buffer, ColorType};
 use std::path::Path;
 use std::time::{Duration, Instant};
@@ -171,6 +172,8 @@ where
 
         let action = match event {
             Event::NewEvents(cause) => match cause {
+                // the event start caouse,
+                // calling the callback, and decide whether to stop or continue
                 StartCause::ResumeTimeReached { .. } | StartCause::Init => {
                     *ctrl_flow = match callback(&action_buffer, &display_image) {
                         Ok(Control::Continue) => {
@@ -186,30 +189,50 @@ where
                     };
                     return;
                 }
+
+                // ignore other start caouse action
                 _ => Action::Idle,
             },
-            Event::WindowEvent {
-                event: WindowEvent::CloseRequested,
-                ..
-            } => Action::Stop,
-            Event::WindowEvent {
-                event:
-                    WindowEvent::KeyboardInput {
-                        input:
-                            KeyboardInput {
-                                virtual_keycode: Some(virtual_code),
-                                state: ElementState::Pressed,
-                                ..
-                            },
-                        ..
-                    },
-                ..
-            } => match virtual_code {
-                VirtualKeyCode::Escape => Action::Stop,
-                _ => Action::Key(virtual_code),
+
+            Event::WindowEvent { event, .. } => match event {
+                // close window is a stop action
+                WindowEvent::CloseRequested => Action::Stop,
+
+                // when keyboard pressed should be a key action
+                // except `esc` , that should be a stop action
+                WindowEvent::KeyboardInput {
+                    input:
+                        KeyboardInput {
+                            virtual_keycode: Some(virtual_code),
+                            state: ElementState::Pressed,
+                            ..
+                        },
+                    ..
+                } => match virtual_code {
+                    VirtualKeyCode::Escape => Action::Stop,
+                    _ => Action::Key(virtual_code),
+                },
+
+                // when cursor moved, should be a move action
+                WindowEvent::CursorMoved {
+                    position: PhysicalPosition { x, y },
+                    ..
+                } => Action::Move { x, y },
+
+                // when mouse clicked, should be a click action
+                WindowEvent::MouseInput {
+                    state: ElementState::Pressed,
+                    button: MouseButton::Left,
+                    ..
+                } => Action::Clicked,
+                _ => Action::Idle,
             },
             _ => Action::Idle,
         };
+
+        if !matches!(action, Action::Idle) {
+            dbg!(&action);
+        }
 
         action_buffer.push(action);
     })
@@ -217,10 +240,13 @@ where
 
 pub type Key = VirtualKeyCode;
 
+#[derive(Debug)]
 pub enum Action {
     Idle,
     Stop,
     Key(Key),
+    Move { x: f64, y: f64 },
+    Clicked,
 }
 
 pub enum Control {
