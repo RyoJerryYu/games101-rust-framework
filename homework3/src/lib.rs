@@ -275,7 +275,7 @@ pub fn displacement_fragment_shader(payload: &shader::FragmentShaderPayload) -> 
         intensity: Vec3::ONE * 500.,
     };
     let l2 = Light {
-        position: Vec3::new(-20., -20., 0.),
+        position: Vec3::new(-20., 20., 0.),
         intensity: Vec3::ONE * 500.,
     };
 
@@ -302,12 +302,77 @@ pub fn displacement_fragment_shader(payload: &shader::FragmentShaderPayload) -> 
     // Position p = p + kn * n * h(u,v)
     // Normal n = normalize(TBN * ln)
 
+    // n represent the normal dir caculated on that point from mesh vertex.
+    // t represent the tangent dir which have same xz direction as n.
+    // b represent the dir which perpendicular to both n and t.
+    let t = {
+        let xz_length = (normal.x * normal.x + normal.z * normal.z).sqrt();
+        Vec3::new(
+            -normal.x * normal.y / xz_length,
+            xz_length,
+            -normal.z * normal.y / xz_length,
+        )
+    };
+    let b = normal.cross(t);
+
+    // n, t, b should perpendicular to each other, and all of them should be normalized.
+    // so |TBN| should equal to 1
+    let tbn = Mat3::from_cols(t, b, normal);
+
+    // h_uv => h(u,v) , h_u1v => h(u+1,v) , h_uv1 => h(u,v+1)
+    let (h_uv, h_u1v, h_uv1) = {
+        let texture = payload.texture.as_ref().unwrap();
+        // don't know why hmap have color, and what each r,g,b means...
+        // fix: https://games-cn.org/forums/topic/%e4%bd%9c%e4%b8%9a3%e6%9b%b4%e6%ad%a3%e5%85%ac%e5%91%8a/
+        // belong to that, h(u,v) = texture_color(u,v).norm() (a.k.a the length of vector of color)
+
+        // becouse texture.get_color recieve a (u,v) in (0..1, 0..1)
+        // so move one texel on texture should not use (u+1,v) but (u+1/w,v)
+        let (u, v) = (payload.tex_coords.x, payload.tex_coords.y);
+        let (w, h) = (texture.width as f32, texture.height as f32);
+
+        let h_uv: Vec3 = texture.get_color(u, v).into();
+        let h_u1v: Vec3 = texture.get_color(u + 1.0 / w, v).into();
+        let h_uv1: Vec3 = texture.get_color(u, v + 1.0 / h).into();
+        (h_uv.length(), h_u1v.length(), h_uv1.length())
+    };
+
+    let du = kh * kn * (h_u1v - h_uv);
+    let dv = kh * kn * (h_uv1 - h_uv);
+    let ln = Vec3::new(-du, -dv, 1.0).normalize();
+
+    // though there is caculating point before normal, the `n` value is the caculated normal vector.
+    // so it should caculate normal first, then point.
+    let normal = (tbn * ln).normalize();
+    let point = point + kn * normal * h_uv;
+
     let mut result_color = Vec3::ZERO;
 
     for light in lights {
-        todo!()
         // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
         // components are. Then, accumulate that result on the *result_color* object.
+
+        // ambient 环境光
+        // diffuse 散射
+        // specular 镜面反射
+
+        let light_dir = light.position - point; // light_dir represent a vector from shading point to light position
+        let eye_dir = eye_pos - point; // eye_dir represent a vector from shading point to eye position
+        let reg_light_intensity = light.intensity / light_dir.dot(light_dir); // I/(r^2) , represent the energy arrived shading point
+
+        // let kd = kd * 0.0;
+        // let ks = ks * 0.0;
+        let la = ka * amb_light_intensity;
+        let ld = kd * reg_light_intensity * light_dir.normalize().dot(normal).max(0.0);
+        let ls = ks
+            * reg_light_intensity
+            * (light_dir + eye_dir)
+                .normalize()
+                .dot(normal)
+                .max(0.0)
+                .powf(p);
+
+        result_color += la + ld + ls;
     }
     result_color * 255.
 }
