@@ -210,6 +210,71 @@ pub fn texture_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 
     result_color * 255.0
 }
 
+pub fn texture_bilinear_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
+    let texture_color = match payload.texture {
+        Some(texture) => {
+            // TODO: Get the texture value at the texture coordinates of the current fragment
+            texture
+                // .get_color(payload.tex_coords.x, payload.tex_coords.y)
+                .get_color_bilinear(payload.tex_coords.x, payload.tex_coords.y)
+                .into()
+        }
+        None => Vec3::new(0.0, 0.0, 0.0),
+    };
+
+    let ka = Vec3::new(0.005, 0.005, 0.005);
+    let kd = texture_color / 255.0;
+    let ks = Vec3::new(0.7937, 0.7937, 0.7937);
+
+    let l1 = Light {
+        position: Vec3::ONE * 20.0,
+        intensity: Vec3::ONE * 500.,
+    };
+    let l2 = Light {
+        position: Vec3::new(-20., 20., 0.),
+        intensity: Vec3::ONE * 500.,
+    };
+
+    let lights = vec![l1, l2];
+    let amb_light_intensity = Vec3::ONE * 10.;
+    let eye_pos = Vec3::new(0.0, 0.0, 10.0);
+
+    let p = 150.;
+
+    let color = texture_color;
+    let point = payload.view_pos;
+    let normal = payload.normal.normalize();
+    let mut result_color = Vec3::ZERO;
+
+    for light in lights {
+        // TODO: For each light source in the code, calculate what the *ambient*, *diffuse*, and *specular*
+        // components are. Then, accumulate that result on the *result_color* object.
+
+        // ambient 环境光
+        // diffuse 散射
+        // specular 镜面反射
+
+        let light_dir = light.position - point; // light_dir represent a vector from shading point to light position
+        let eye_dir = eye_pos - point; // eye_dir represent a vector from shading point to eye position
+        let reg_light_intensity = light.intensity / light_dir.dot(light_dir); // I/(r^2) , represent the energy arrived shading point
+
+        // let kd = kd * 0.0;
+        // let ks = ks * 0.0;
+        let la = ka * amb_light_intensity;
+        let ld = kd * reg_light_intensity * light_dir.normalize().dot(normal).max(0.0);
+        let ls = ks
+            * reg_light_intensity
+            * (light_dir + eye_dir)
+                .normalize()
+                .dot(normal)
+                .max(0.0)
+                .powf(p);
+
+        result_color += la + ld + ls;
+    }
+    result_color * 255.0
+}
+
 pub fn phong_fragment_shader(payload: &shader::FragmentShaderPayload) -> Vec3 {
     let ka = Vec3::ONE * 0.005;
     let kd = payload.color / 255.0;

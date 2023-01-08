@@ -3,7 +3,7 @@ use glam::Vec3;
 use homework3::{
     bump_fragment_shader, displacement_fragment_shader, get_model_matrix, get_projection_matrix,
     get_view_matrix, normal_fragment_shader, phong_fragment_shader, rst, shader,
-    texture_fragment_shader,
+    texture_bilinear_fragment_shader, texture_fragment_shader,
 };
 use obj::load_obj;
 use utils::{
@@ -98,7 +98,10 @@ fn main() -> Result<()> {
                 Action::Key(Key::W) => scale += 0.1,
                 Action::Key(Key::S) => scale -= 0.1,
                 Action::Key(k)
-                    if matches!(k, Key::Key1 | Key::Key2 | Key::Key3 | Key::Key4 | Key::Key5) =>
+                    if matches!(
+                        k,
+                        Key::Key1 | Key::Key2 | Key::Key3 | Key::Key4 | Key::Key5 | Key::Key6
+                    ) =>
                 {
                     let use_shader = match k {
                         Key::Key1 => UseShader::Normal,
@@ -106,6 +109,7 @@ fn main() -> Result<()> {
                         Key::Key3 => UseShader::Texture,
                         Key::Key4 => UseShader::Bump,
                         Key::Key5 => UseShader::Displacement,
+                        Key::Key6 => UseShader::BilinearTexture,
                         _ => panic!(),
                     };
                     set_fragment_shader(&mut r, use_shader, obj_path, texture_file, hmap_file)?;
@@ -133,6 +137,7 @@ enum UseShader {
     Normal,
     Phong,
     Texture,
+    BilinearTexture,
     Bump,
     Displacement,
 }
@@ -150,6 +155,11 @@ fn set_fragment_shader(
             r.set_texture(shader::Texture::new(&texture_path)?);
             texture_fragment_shader
         }
+        UseShader::BilinearTexture => {
+            let texture_path = format!("{}{}", obj_path, texture_file);
+            r.set_texture(shader::Texture::new(&texture_path)?);
+            texture_bilinear_fragment_shader
+        }
         UseShader::Normal => normal_fragment_shader,
         UseShader::Phong => phong_fragment_shader,
         UseShader::Bump => {
@@ -162,7 +172,6 @@ fn set_fragment_shader(
             r.set_texture(shader::Texture::new(&texture_path)?);
             displacement_fragment_shader
         }
-        _ => normal_fragment_shader,
     };
     r.set_fragment_shader(active_shader);
     Ok(())
