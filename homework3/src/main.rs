@@ -17,17 +17,36 @@ fn main() -> Result<()> {
     let mut scale = 2.5;
     // let mut scale = 10.0;
     let filename = "output.png";
+    // spot
     let obj_path = "homework3/models/spot/";
     let obj_file = "spot_triangulated_good.obj";
     let texture_file = "spot_texture.png";
-    // let texture_file = "hmap.jpg";
     let hmap_file = "hmap.jpg";
+
+    // rock
     // let obj_path = "homework3/models/rock/";
     // let obj_file = "rock.obj";
-    // let obj_path = "homework3/models/spot/";
-    // let obj_file = "spot_triangulated_good.obj";
+    // let texture_file = "rock.png";
+    // let hmap_file = "";
+
+    // cube
     // let obj_path = "homework3/models/cube/";
     // let obj_file = "cube.obj";
+    // let texture_file = "";
+    // let hmap_file = "";
+
+    // crate
+    // let obj_path = "homework3/models/Crate/";
+    // let obj_file = "Crate1.obj";
+    // let texture_file = "";
+    // let hmap_file = "";
+
+    // bunny
+    // let obj_path = "homework3/models/bunny/";
+    // let obj_file = "bunny.obj";
+    // let texture_file = "";
+    // let hmap_file = "";
+
     let frame_width = 700;
     let mut triangle_list = Vec::new();
 
@@ -62,7 +81,7 @@ fn main() -> Result<()> {
     // let use_shader = UseShader::Normal;
     // let use_shader = UseShader::Phong;
     // let use_shader = UseShader::Texture;
-    let use_shader = UseShader::Bump;
+    let use_shader = UseShader::Normal;
     set_fragment_shader(&mut r, use_shader, obj_path, texture_file, hmap_file)?;
 
     dbg!("texture loaded");
