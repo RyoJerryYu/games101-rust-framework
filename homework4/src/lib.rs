@@ -18,11 +18,18 @@ pub fn naive_bezier(r: &mut rst::Rasterizer, control_points: &Vec<Vec2>) {
 
 fn recursive_bezier(control_points: &Vec<Vec2>, t: f32) -> Vec2 {
     // TODO: Implement de Casteljau's algorithm
-    todo!()
+    if control_points.len() <= 1 {
+        return control_points[0];
+    }
+    let mut points = vec![];
+    for i in 0..control_points.len() - 1 {
+        points.push((1.0 - t) * control_points[i] + t * control_points[i + 1]);
+    }
+    recursive_bezier(&points, t)
 }
 
 pub fn bezier(r: &mut rst::Rasterizer, control_points: &Vec<Vec2>) {
-    // TODO: Iterate through all t = 0 to t = 1 with small steps, and call de Casteljau's 
+    // TODO: Iterate through all t = 0 to t = 1 with small steps, and call de Casteljau's
     // recursive Bezier algorithm.
     let range_length = 1000;
     for t in 0..range_length {
