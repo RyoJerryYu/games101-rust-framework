@@ -25,7 +25,7 @@ where
     F: 'static + FnMut(&Vec<Action>, &DisplayImage) -> Result<Control>,
 {
     let event_loop = glutin::event_loop::EventLoop::new();
-    let wb = glutin::window::WindowBuilder::new().with_inner_size(PhysicalSize::new(width,height));
+    let wb = glutin::window::WindowBuilder::new().with_inner_size(PhysicalSize::new(width, height));
     let cb = glutin::ContextBuilder::new().with_vsync(true);
     let display = glium::Display::new(wb, cb, &event_loop).unwrap();
 
@@ -166,6 +166,7 @@ where
 
     let mut action_buffer = Vec::new();
     let mut next_frame_time = Instant::now();
+    let mut cursor_at: (f32, f32) = (0.0, 0.0);
 
     event_loop.run(move |event, _, ctrl_flow| {
         *ctrl_flow = ControlFlow::WaitUntil(next_frame_time);
@@ -213,18 +214,21 @@ where
                     _ => Action::Key(virtual_code),
                 },
 
-                // when cursor moved, should be a move action
+                // when cursor moved, just update cursor_at, and is a idle action
                 WindowEvent::CursorMoved {
                     position: PhysicalPosition { x, y },
                     ..
-                } => Action::Move { x, y },
+                } => {
+                    cursor_at = (x as f32, y as f32);
+                    Action::Idle
+                },
 
                 // when mouse clicked, should be a click action
                 WindowEvent::MouseInput {
                     state: ElementState::Pressed,
                     button: MouseButton::Left,
                     ..
-                } => Action::Clicked,
+                } => Action::Clicked{x:cursor_at.0, y:cursor_at.1},
                 _ => Action::Idle,
             },
             _ => Action::Idle,
@@ -245,8 +249,7 @@ pub enum Action {
     Idle,
     Stop,
     Key(Key),
-    Move { x: f64, y: f64 },
-    Clicked,
+    Clicked { x: f32, y: f32 },
 }
 
 pub enum Control {
