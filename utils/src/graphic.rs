@@ -12,9 +12,9 @@ use std::time::{Duration, Instant};
 use crate::rasterizer;
 
 pub fn save_image<P: AsRef<Path>>(rst: &impl rasterizer::Rasterizable, path: P) -> Result<()> {
-    let data = rst.data();
+    let data = rst.u8_data();
     let (width, height) = rst.size();
-    save_buffer(path, data, width, height, ColorType::Rgb8)?;
+    save_buffer(path, &data, width, height, ColorType::Rgb8)?;
     Ok(())
 }
 
@@ -140,7 +140,7 @@ where
 
     let display_image: DisplayImage =
         Box::new(move |rst: &dyn rasterizer::Rasterizable| -> Result<()> {
-            let image = glium::texture::RawImage2d::from_raw_rgb_reversed(rst.data(), rst.size());
+            let image = glium::texture::RawImage2d::from_raw_rgb_reversed(&rst.u8_data(), rst.size());
             let opengl_texture = glium::texture::CompressedSrgbTexture2d::new(&display, image)?;
             let uniforms = uniform! {
                 matrix: [

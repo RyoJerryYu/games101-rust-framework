@@ -20,13 +20,8 @@ pub struct Rasterizer {
 }
 
 impl utils::rasterizer::Rasterizable for Rasterizer {
-    fn data(&self) -> &[u8] {
-        unsafe {
-            std::slice::from_raw_parts(
-                std::mem::transmute(self.frame_buf.as_ptr()),
-                self.frame_buf.len() * 3,
-            )
-        }
+    fn data(&self) -> &Vec<utils::rgb::Rgb> {
+        &self.frame_buf
     }
 
     fn size(&self) -> (u32, u32) {
