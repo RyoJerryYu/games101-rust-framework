@@ -1,8 +1,13 @@
 use bitflags::bitflags;
 
+use crate::rgb;
+
 pub trait Rasterizable {
-    fn data(&self) -> &[u8];
+    fn data(&self) -> &Vec<rgb::Rgb>;
     fn size(&self) -> (u32, u32);
+    fn u8_data(&self) -> Vec<u8> {
+        rgb::rgb_vec_to_u8_slice(&self.data())
+    }
 }
 
 bitflags! {
@@ -38,12 +43,12 @@ pub struct ColBufId(pub u32);
 pub struct BufRasterizer {
     pub width: u32,
     pub height: u32,
-    pub data: Vec<u8>,
+    pub data: Vec<rgb::Rgb>,
 }
 
 impl Rasterizable for BufRasterizer {
-    fn data(&self) -> &[u8] {
-        return &self.data;
+    fn data(&self) -> &Vec<rgb::Rgb> {
+        &self.data
     }
 
     fn size(&self) -> (u32, u32) {

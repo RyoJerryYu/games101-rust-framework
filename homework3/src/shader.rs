@@ -102,21 +102,20 @@ mod test {
          * v         v
          * green -> cyan
          */
-        let raw: &[u8] = &[
-            0, 0, 0, //
-            0, 0, 128, //
-            0, 0, 255, //
-            0, 128, 0, //
-            0, 128, 128, //
-            0, 128, 255, //
-            0, 255, 0, //
-            0, 255, 128, //
-            0, 255,
-            255, //
+        let raw = &[
+            utils::rgb::Rgb::new(0, 0, 0),     //
+            utils::rgb::Rgb::new(0, 0, 128),   //
+            utils::rgb::Rgb::new(0, 0, 255),   //
+            utils::rgb::Rgb::new(0, 128, 0),   //
+            utils::rgb::Rgb::new(0, 128, 128), //
+            utils::rgb::Rgb::new(0, 128, 255), //
+            utils::rgb::Rgb::new(0, 255, 0),   //
+            utils::rgb::Rgb::new(0, 255, 128), //
+            utils::rgb::Rgb::new(0, 255, 255), //
 
-                 // 255,0,0,
-                 // 255,0,128,
-                 // 255,0,255,
+                                               // 255,0,0,
+                                               // 255,0,128,
+                                               // 255,0,255,
         ];
 
         let r = utils::rasterizer::BufRasterizer {
