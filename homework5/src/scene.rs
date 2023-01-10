@@ -5,8 +5,8 @@ pub struct Scene {
     objects: Vec<Box<dyn Object>>,
     lights: Vec<Box<dyn Light>>,
 
-    pub width: u32,
-    pub height: u32,
+    pub width: usize,
+    pub height: usize,
     pub fov: f64,
     pub background_color: Vec3,
     pub max_depth: u32,
@@ -14,7 +14,7 @@ pub struct Scene {
 }
 
 impl Scene {
-    pub fn new(w: u32, h: u32) -> Self {
+    pub fn new(w: usize, h: usize) -> Self {
         Self {
             objects: vec![],
             lights: vec![],
