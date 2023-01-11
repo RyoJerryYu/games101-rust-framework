@@ -37,19 +37,20 @@ impl ObjectRenderPayload {
 
 // representing the interfaces of virtual class `Object` in cpp codes
 pub trait Object {
+    // intersect on orig + t * dir
     fn intersect(
         &self,
         orig: &Vec3,
         dir: &Vec3,
-        tnear: &f32,
-        index: &mut u32,
+        tnear: &mut f32, // return t
+        index: &mut usize,
         uv: &mut Vec2,
     ) -> bool;
     fn get_surface_properties(
         &self,
         p: &Vec3,
         pp: &Vec3,
-        index: &u32,
+        index: &usize,
         uv: &Vec2,
         n: &mut Vec3,
         st: &mut Vec2,
