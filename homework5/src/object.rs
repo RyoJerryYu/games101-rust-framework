@@ -49,7 +49,7 @@ pub trait Object {
     fn get_surface_properties(
         &self,
         p: &Vec3,
-        pp: &Vec3,
+        dir: &Vec3,
         index: &usize,
         uv: &Vec2,
         n: &mut Vec3,

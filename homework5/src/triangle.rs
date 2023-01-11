@@ -64,7 +64,7 @@ impl Object for MeshTriangle {
     fn get_surface_properties(
         &self,
         p: &glam::Vec3,
-        pp: &glam::Vec3,
+        dir: &glam::Vec3,
         index: &usize,
         uv: &glam::Vec2,
         n: &mut glam::Vec3,

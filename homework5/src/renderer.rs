@@ -1,12 +1,17 @@
+use std::ops::{Mul, Neg};
+
 use glam::{Vec2, Vec3};
 
-use crate::{object, scene};
+use crate::{
+    object::{self, MaterialType},
+    scene,
+};
 
-pub struct HitPayload {
+pub struct HitPayload<'a> {
     pub t_near: f32,
-    pub index: u32,
+    pub index: usize,
     pub uv: Vec2,
-    pub hit_obj: Box<dyn object::Object>,
+    pub hit_obj: &'a Box<dyn object::Object>,
 }
 
 pub struct Renderer {}
@@ -29,7 +34,7 @@ fn reflect(i: Vec3, n: Vec3) -> Vec3 {
 //
 // If the ray is inside, you need to invert the refractive indices and negate the normal N
 // [/comment]
-fn reflect_with_ior(i: Vec3, n: Vec3, ior: f32) -> Vec3 {
+fn refract(i: Vec3, n: Vec3, ior: f32) -> Vec3 {
     let mut cosi = i.dot(n).clamp(-1.0, 1.0);
     let (mut etai, mut etat) = (1.0, ior);
     let mut n = n;
@@ -93,8 +98,31 @@ fn fresnel(i: Vec3, n: Vec3, ior: f32) -> f32 {
 // \param[out] *hitObject stores the pointer to the intersected object (used to retrieve material information, etc.)
 // \param isShadowRay is it a shadow ray. We can return from the function sooner as soon as we have found a hit.
 // [/comment]
-fn trace(orig: Vec3, dir: Vec3, objects: &Vec<Box<dyn object::Object>>) -> Option<HitPayload> {
-    todo!()
+fn trace<'a>(
+    orig: &Vec3,
+    dir: &Vec3,
+    objects: &'a Vec<Box<dyn object::Object>>,
+) -> Option<HitPayload<'a>> {
+    let mut tnear = f32::INFINITY;
+    let mut payload: Option<HitPayload> = None;
+
+    for obj in objects {
+        let mut tneark = f32::INFINITY;
+        let mut indexk = 0;
+        let mut uvk = Vec2::ZERO;
+
+        if obj.intersect(&orig, &dir, &mut tneark, &mut indexk, &mut uvk) && tneark < tnear {
+            payload = Some(HitPayload {
+                t_near: tneark,
+                index: indexk,
+                uv: uvk,
+                hit_obj: obj,
+            });
+            tnear = tneark;
+        }
+    }
+
+    return payload;
 }
 
 // [comment]
@@ -113,8 +141,131 @@ fn trace(orig: Vec3, dir: Vec3, objects: &Vec<Box<dyn object::Object>>) -> Optio
 // If the surface is diffuse/glossy we use the Phong illumation model to compute the color
 // at the intersection point.
 // [/comment]
-fn castRay(orig: Vec3, dir: Vec3, scene: &scene::Scene, depth: i32) -> Vec3 {
-    todo!()
+fn cast_ray(orig: &Vec3, dir: &Vec3, scene: &scene::Scene, depth: u32) -> Vec3 {
+    if depth > scene.max_depth {
+        return Vec3::ZERO;
+    }
+
+    let mut hit_color = scene.background_color;
+    let payload = trace(orig, dir, scene.get_objects());
+
+    let payload = if let Some(payload) = payload {
+        payload
+    } else {
+        return scene.background_color;
+    };
+
+    let hit_point = *orig + *dir * payload.t_near;
+    let mut n = Vec3::ZERO; // normal
+    let mut st = Vec2::ZERO; // st coordinates
+    payload.hit_obj.get_surface_properties(
+        &hit_point,
+        dir,
+        &payload.index,
+        &payload.uv,
+        &mut n,
+        &mut st,
+    );
+
+    let obj_payload = payload.hit_obj.get_render_payload();
+
+    match obj_payload.material_type {
+        MaterialType::ReflectionAndRefraction => {
+            let reflection_direction = reflect(*dir, n).normalize();
+            let refraction_direction = refract(*dir, n, obj_payload.ior).normalize();
+
+            let reflection_ray_orig = if reflection_direction.dot(n) < 0.0 {
+                hit_point - n * scene.epsilon
+            } else {
+                hit_point + n * scene.epsilon
+            };
+            let refraction_ray_orig = if refraction_direction.dot(n) < 0.0 {
+                hit_point - n * scene.epsilon
+            } else {
+                hit_point + n * scene.epsilon
+            };
+
+            let reflection_color = cast_ray(
+                &reflection_ray_orig,
+                &reflection_direction,
+                scene,
+                depth + 1,
+            );
+            let refraction_color = cast_ray(
+                &refraction_ray_orig,
+                &refraction_direction,
+                scene,
+                depth + 1,
+            );
+
+            let kr = fresnel(*dir, n, obj_payload.ior);
+            hit_color = reflection_color * kr + refraction_color * (1.0 - kr);
+        }
+        MaterialType::Reflection => {
+            let kr = fresnel(*dir, n, obj_payload.ior);
+            let reflection_direction = reflect(*dir, n);
+            let reflection_ray_orig = if reflection_direction.dot(n) < 0.0 {
+                hit_point + n * scene.epsilon
+            } else {
+                hit_point - n * scene.epsilon
+            };
+            hit_color = cast_ray(
+                &reflection_ray_orig,
+                &reflection_direction,
+                scene,
+                depth + 1,
+            ) * kr;
+        }
+        _ => {
+            // [comment]
+            // We use the Phong illumation model int the default case. The phong model
+            // is composed of a diffuse and a specular reflection component.
+            // [/comment]
+            let mut light_amt = Vec3::ZERO;
+            let mut specular_color = Vec3::ZERO;
+            let shadow_point_orig = if dir.dot(n) < 0.0 {
+                hit_point + n * scene.epsilon
+            } else {
+                hit_point - n * scene.epsilon
+            };
+
+            // [comment]
+            // Loop over all lights in the scene and sum their contribution up
+            // We also apply the lambert cosine law
+            // [/comment]
+            for light in scene.get_lights() {
+                let light_dir = light.position() - hit_point;
+                // square of the distance between hitPoint and the light
+                let light_distance_2 = light_dir.dot(light_dir);
+                let light_dir = light_dir.normalize();
+                let l_dot_n = light_dir.dot(n).max(0.0);
+                // is the point in shadow, and is the nearest occluding object closer to the object than the light itself?
+                let shadow_res = trace(&shadow_point_orig, &light_dir, scene.get_objects());
+                let in_shadow = match shadow_res {
+                    Some(shadow_res) => shadow_res.t_near * shadow_res.t_near < light_distance_2,
+                    None => false,
+                };
+
+                light_amt = match in_shadow {
+                    true => light_amt + Vec3::ZERO,
+                    false => light_amt + light.intensity() * l_dot_n,
+                };
+
+                let reflection_direction = reflect(-light_dir, n);
+                specular_color += reflection_direction
+                    .dot(*dir)
+                    .neg()
+                    .max(0.0)
+                    .powf(obj_payload.specular_exponent)
+                    .mul(light.intensity());
+            }
+
+            hit_color = light_amt * payload.hit_obj.eval_diffuse_color(&st) * obj_payload.kd
+                + specular_color * obj_payload.ks;
+        }
+    }
+
+    return  hit_color;
 }
 
 fn update_progress(progress: f32) {
@@ -165,7 +316,7 @@ impl Renderer {
 
                 let dir = Vec3::new(x, y, -1.0); // Don't forget to normalize this direction!
                 let buf_index = get_buffer_index(scene.height, scene.width, x, y);
-                frame_buffer[buf_index] = castRay(eye_pos, dir, scene, 0);
+                frame_buffer[buf_index] = cast_ray(&eye_pos, &dir, scene, 0);
             }
             update_progress((j as f32) / (scene.height as f32));
         }
