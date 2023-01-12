@@ -16,22 +16,22 @@ fn main() {
     scene.add_object(Box::new(sph2));
 
     // add mesh triangle
-    let verts = vec![
-        Vec3::new(-5.0, -3.0, -6.0),
-        Vec3::new(5.0, -3.0, -6.0),
-        Vec3::new(5.0, -3.0, -16.0),
-        Vec3::new(-5.0, -3.0, -16.0),
-    ];
-    let vert_index = vec![0, 1, 3, 1, 2, 3];
-    let st = vec![
-        Vec2::new(0.0, 0.0),
-        Vec2::new(1.0, 0.0),
-        Vec2::new(1.0, 1.0),
-        Vec2::new(0.0, 1.0),
-    ];
-    let mut mesh = triangle::MeshTriangle::new(verts, vert_index, 2, st);
-    mesh.render_payload.material_type = MaterialType::DiffuseAndGlossy;
-    scene.add_object(Box::new(mesh));
+    // let verts = vec![
+    //     Vec3::new(-5.0, -3.0, -6.0),
+    //     Vec3::new(5.0, -3.0, -6.0),
+    //     Vec3::new(5.0, -3.0, -16.0),
+    //     Vec3::new(-5.0, -3.0, -16.0),
+    // ];
+    // let vert_index = vec![0, 1, 3, 1, 2, 3];
+    // let st = vec![
+    //     Vec2::new(0.0, 0.0),
+    //     Vec2::new(1.0, 0.0),
+    //     Vec2::new(1.0, 1.0),
+    //     Vec2::new(0.0, 1.0),
+    // ];
+    // let mut mesh = triangle::MeshTriangle::new(verts, vert_index, 2, st);
+    // mesh.render_payload.material_type = MaterialType::DiffuseAndGlossy;
+    // scene.add_object(Box::new(mesh));
 
     scene.add_light(Box::new(light::PointLight::new(
         &Vec3::new(-20.0, 70.0, 20.0),
