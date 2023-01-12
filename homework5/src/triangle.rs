@@ -105,7 +105,7 @@ impl Object for MeshTriangle {
             .collect::<Vec<Vec3>>();
         assert!(verts.len() == 3);
 
-        let e0 = (verts[1] - verts[2]).normalize();
+        let e0 = (verts[1] - verts[0]).normalize();
         let e1 = (verts[2] - verts[1]).normalize();
         *n = e0.cross(e1);
 
