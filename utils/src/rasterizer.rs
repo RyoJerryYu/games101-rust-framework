@@ -60,7 +60,7 @@ impl Rasterizable for BufRasterizer {
 impl BufRasterizer {
     pub fn from_vec3s(vec3s: Vec<Vec3>, width: u32, height: u32) -> Self {
         let data = vec3s.into_iter().map(|x| {
-            rgb::Rgb::from(&x)
+            rgb::Rgb::from(&(x * 255.0))
         }).collect();
         Self { width, height, data }
     }

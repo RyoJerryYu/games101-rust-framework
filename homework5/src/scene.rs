@@ -7,7 +7,7 @@ pub struct Scene {
 
     pub width: usize,
     pub height: usize,
-    pub fov: f64,
+    pub fov: f32,
     pub background_color: Vec3,
     pub max_depth: u32,
     pub epsilon: f32,
