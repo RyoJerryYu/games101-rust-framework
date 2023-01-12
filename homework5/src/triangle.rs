@@ -1,4 +1,4 @@
-use glam::{Vec2, Vec3};
+use glam::{Mat3, Vec2, Vec3};
 
 use crate::object::{Object, ObjectRenderPayload};
 
@@ -16,7 +16,36 @@ fn ray_triangle_intersect(
     // that's specified bt v0, v1 and v2 intersects with the ray (whose
     // origin is *orig* and direction is *dir*)
     // Also don't forget to update tnear, u and v.
-    todo!()
+
+    // intersect -> the point that ray cross the plane is in the triangle
+    // for i in 0..2:
+    //   n_plane dot (v[i] - p) = 0
+    //   => n_plane dot (v[i] - orig - t * dir) = 0
+    //   => n_plane dot (v[i] - orig) = t * n_plane dot dir
+    //   => t = n_plane dot (v[i] - orig) / n_plane dot dir
+    // where n_plane is a cross product for edges
+
+    // second method:
+    // p = (1 - a - b)*v[0] + a*v[1] + b*v[2]
+    //   = orig + t * dir
+    // =>
+    // a*(v[1] - v[0]) + b*(v[2]-v[0]) + t*(-dir) = orig - v[0]
+    // [(v[1]-v[0]), (v[2]-v[0], -dir)] dot [a,b,t]T = (orig - v[0])
+    // [a,b,t]T = ([(v[1]-v[0]), (v[2]-v[0], -dir)])^-1 * (orig-v[0])
+
+    // mat * [a,b,t]T = (orig - v[0])
+    let mat = Mat3::from_cols(*v1 - *v0, *v2 - *v0, -*dir);
+    let Vec3 { x: a, y: b, z: t } = mat.inverse() * (*orig - *v0);
+
+    // well, according to other codes, u,v is the barycentric coordinate
+    if a > 0.0 && b > 0.0 && (1.0- a - b)> 0.0 {
+        *tnear = t;
+        *u = a;
+        *v = b;
+        return true;
+    }
+    
+    return false;
 }
 
 pub struct MeshTriangle {
@@ -99,10 +128,9 @@ impl Object for MeshTriangle {
         let pattern = ((w - w.floor()) > 0.5) ^ ((h - h.floor()) > 0.5);
         if pattern {
             Vec3::new(0.937, 0.937, 0.231)
-        }else {
+        } else {
             Vec3::new(0.815, 0.235, 0.031)
         }
-
     }
 }
 
