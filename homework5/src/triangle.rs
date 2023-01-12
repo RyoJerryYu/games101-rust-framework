@@ -37,14 +37,14 @@ fn ray_triangle_intersect(
     let mat = Mat3::from_cols(*v1 - *v0, *v2 - *v0, -*dir);
     let Vec3 { x: a, y: b, z: t } = mat.inverse() * (*orig - *v0);
 
-    // well, according to other codes, u,v is the barycentric coordinate
-    if a > 0.0 && b > 0.0 && (1.0- a - b)> 0.0 {
+    if a > 0.0 && b > 0.0 && (1.0 - a - b) > 0.0 && t > 0.0 {
+        // well, according to other codes, u,v is the barycentric coordinate
         *tnear = t;
         *u = a;
         *v = b;
         return true;
     }
-    
+
     return false;
 }
 
