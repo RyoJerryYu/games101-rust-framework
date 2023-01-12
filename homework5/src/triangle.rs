@@ -107,7 +107,7 @@ impl Object for MeshTriangle {
 
         let e0 = (verts[1] - verts[0]).normalize();
         let e1 = (verts[2] - verts[1]).normalize();
-        *n = e0.cross(e1);
+        *n = e0.cross(e1).normalize();
 
         let sts = (0..3)
             .map(|i| self.vertex_index[index * 3 + i])
