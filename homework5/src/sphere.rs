@@ -1,6 +1,6 @@
 use glam::Vec3;
 
-use crate::object::{MaterialType, Object, ObjectRenderPayload};
+use crate::object::{Object, ObjectRenderPayload};
 
 // return x0 < x1
 #[inline]
