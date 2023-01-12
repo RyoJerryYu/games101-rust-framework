@@ -313,8 +313,17 @@ impl Renderer {
                 // Also, don't forget to multiply both of them with the variable *scale*, and
                 // x (horizontal) variable with the *imageAspectRatio*
 
-                let dir = Vec3::new(x, y, -1.0); // Don't forget to normalize this direction!
-                let buf_index = get_buffer_index(scene.height, scene.width, x, y);
+                // x and y is the position where ray arrived on z = -1
+                // and aware that y is upside down
+                let y =
+                    -(j as f32 - scene.height as f32 / 2.0) / (scene.height as f32) * scale;
+                let x = (i as f32 - scene.width as f32 / 2.0) / (scene.width as f32)
+                    * scale
+                    * image_aspect_ratio;
+
+                let dir = Vec3::new(x, y, -1.0) // Don't forget to normalize this direction!
+                    .normalize();
+                let buf_index = get_buffer_index(scene.height, scene.width, i, j);
                 frame_buffer[buf_index] = cast_ray(&eye_pos, &dir, scene, 0);
             }
             update_progress((j as f32) / (scene.height as f32));
