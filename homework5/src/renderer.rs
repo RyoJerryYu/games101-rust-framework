@@ -265,7 +265,7 @@ fn cast_ray(orig: &Vec3, dir: &Vec3, scene: &scene::Scene, depth: u32) -> Vec3 {
         }
     }
 
-    return  hit_color;
+    return hit_color;
 }
 
 fn update_progress(progress: f32) {
@@ -284,9 +284,9 @@ fn update_progress(progress: f32) {
 }
 
 #[inline]
-fn get_buffer_index(height: usize, width: usize, x: f32, y: f32) -> usize {
-    let x = (x as usize).clamp(0, width);
-    let y = (y as usize).clamp(0, height);
+fn get_buffer_index(height: usize, width: usize, x: usize, y: usize) -> usize {
+    let x = x.clamp(0, width);
+    let y = y.clamp(0, height);
     y * width + x
 }
 
@@ -302,13 +302,12 @@ impl Renderer {
         let image_aspect_ratio = (scene.width as f32) / (scene.height as f32);
 
         // Use this variable as the eye position to start your rays.
-        let mut eye_pos = Vec3::ZERO;
-        // j represent the height value
+        let eye_pos = Vec3::ZERO;
+        // j represent the height value, which 0 on the top
         for j in 0..scene.height {
             // i represent the width value
             for i in 0..scene.width {
-                let x = 0.0;
-                let y = 0.0;
+                // generate primary ray direction
                 // TODO: Find the x and y positions of the current pixel to get the direction
                 // vector that passes through it.
                 // Also, don't forget to multiply both of them with the variable *scale*, and
