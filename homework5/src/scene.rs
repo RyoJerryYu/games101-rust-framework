@@ -1,5 +1,5 @@
 use crate::{object::Object, light::Light};
-use glam::{Vec2, Vec3};
+use glam::Vec3;
 
 pub struct Scene {
     objects: Vec<Box<dyn Object>>,
