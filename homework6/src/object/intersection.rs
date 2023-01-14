@@ -1,6 +1,6 @@
 use glam::Vec3;
 
-use crate::{material::Material, object::Object};
+use crate::object::{material::Material, object::Object};
 
 pub struct Intersection {
     pub happended: bool,
