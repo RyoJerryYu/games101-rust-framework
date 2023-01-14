@@ -1,5 +1,7 @@
 use glam::{Vec2, Vec3};
 
+use crate::{intersection::Intersection, ray::Ray};
+
 pub enum MaterialType {
     DiffuseAndGlossy,
     ReflectionAndRefraction,
@@ -38,14 +40,15 @@ impl ObjectRenderPayload {
 // representing the interfaces of virtual class `Object` in cpp codes
 pub trait Object {
     // intersect on orig + t * dir
+    // intersect(ray:&Ray) -> bool
     fn intersect(
         &self,
-        orig: &Vec3,
-        dir: &Vec3,
+        ray: &Ray,
         tnear: &mut f32, // return t
         index: &mut usize,
         uv: &mut Vec2,
     ) -> bool;
+    fn get_intersection(&self, ray: &Ray) -> Intersection;
     fn get_surface_properties(
         &self,
         p: &Vec3,
@@ -55,8 +58,5 @@ pub trait Object {
         n: &mut Vec3,
         st: &mut Vec2,
     );
-    fn get_render_payload(&self) -> &ObjectRenderPayload;
-    fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3 {
-        self.get_render_payload().diffuse_color
-    }
+    fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3;
 }
