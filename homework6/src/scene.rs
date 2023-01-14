@@ -1,5 +1,4 @@
-
-use crate::{object::Object, light::Light};
+use crate::{light::Light, object::object::Object};
 use glam::Vec3;
 
 pub struct Scene {
@@ -47,7 +46,7 @@ impl Scene {
     pub fn get_lights(&self) -> &Vec<Box<dyn Light>> {
         &self.lights
     }
-    
+
     pub fn many() {
         // many should be implement,
         // look back after impling ray
