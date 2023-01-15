@@ -1,4 +1,7 @@
 pub mod scene;
-mod light;
+pub mod light;
 mod ray;
 pub mod object;
+mod bvh;
+pub mod triangle;
+pub mod renderer;
