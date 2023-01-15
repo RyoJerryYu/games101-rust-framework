@@ -2,7 +2,7 @@ use std::ops::{Mul, Neg};
 
 use glam::{Vec2, Vec3};
 
-use crate::{object::object::Object, scene::Scene};
+use crate::{object::object::Object, ray::Ray, scene::Scene};
 
 pub struct HitPayload<'a> {
     pub t_near: f32,
@@ -12,76 +12,6 @@ pub struct HitPayload<'a> {
 }
 
 pub struct Renderer {}
-
-#[inline]
-fn reflect(i: Vec3, n: Vec3) -> Vec3 {
-    i - 2.0 * i.dot(n) * n
-}
-
-// [comment]
-// Compute refraction direction using Snell's law
-//
-// We need to handle with care the two possible situations:
-//
-//    - When the ray is inside the object
-//
-//    - When the ray is outside.
-//
-// If the ray is outside, you need to make cosi positive cosi = -N.I
-//
-// If the ray is inside, you need to invert the refractive indices and negate the normal N
-// [/comment]
-fn refract(i: Vec3, n: Vec3, ior: f32) -> Vec3 {
-    let mut cosi = i.dot(n).clamp(-1.0, 1.0);
-    let (mut etai, mut etat) = (1.0, ior);
-    let mut n = n;
-    if cosi < 0.0 {
-        cosi = -cosi;
-    } else {
-        (etai, etat) = (etat, etai);
-        n = -n;
-    }
-
-    let eta = etai / etat;
-    let k = 1.0 - eta * eta * (1.0 - cosi * cosi);
-
-    if k < 0.0 {
-        Vec3::ZERO
-    } else {
-        eta * i + (eta * cosi - k.sqrt()) * n
-    }
-}
-
-// [comment]
-// Compute Fresnel equation
-//
-// \param I is the incident view direction
-//
-// \param N is the normal at the intersection point
-//
-// \param ior is the material refractive index
-// [/comment]
-fn fresnel(i: Vec3, n: Vec3, ior: f32) -> f32 {
-    let mut cosi = i.dot(n).clamp(-1.0, 1.0);
-    let (mut etai, mut etat) = (1.0, ior);
-    if cosi > 0.0 {
-        (etai, etat) = (etat, etai);
-    }
-    // Compute sini using Snell's law
-    let sint = etai / etat * (1.0 - cosi * cosi).max(0.0).sqrt();
-    // Total internal reflection
-    if sint >= 1.0 {
-        return 1.0;
-    }
-
-    let cost = (1.0 - sint * sint).max(0.0).sqrt();
-    cosi = cosi.abs();
-    let rs = ((etat * cosi) - (etai * cost)) / ((etat * cosi) + (etai * cost));
-    let rp = ((etai * cosi) - (etat * cost)) / ((etai * cosi) + (etat * cost));
-    return (rs * rs + rp * rp) / 2.0;
-    // As a consequence of the conservation of energy, transmittance is given by:
-    // kt = 1 - kr;
-}
 
 // [comment]
 // Returns true if the ray intersects an object, false otherwise.
@@ -265,20 +195,20 @@ fn fresnel(i: Vec3, n: Vec3, ior: f32) -> f32 {
 //     return hit_color;
 // }
 
-// fn update_progress(progress: f32) {
-//     let bar_width = 70;
-//     let pos = ((bar_width as f32 * progress) as usize).clamp(0, bar_width);
-//     let mut strs = String::from("[");
-//     strs.push_str(&String::from("=").repeat(pos));
-//     if pos < bar_width {
-//         strs.push('>');
-//         strs.push_str(&String::from("_").repeat(bar_width - pos - 1));
-//     }
-//     strs.push_str("] ");
-//     strs.push_str(&format!("{}%", (progress * 100.0) as u32));
+fn update_progress(progress: f32) {
+    let bar_width = 70;
+    let pos = ((bar_width as f32 * progress) as usize).clamp(0, bar_width);
+    let mut strs = String::from("[");
+    strs.push_str(&String::from("=").repeat(pos));
+    if pos < bar_width {
+        strs.push('>');
+        strs.push_str(&String::from("_").repeat(bar_width - pos - 1));
+    }
+    strs.push_str("] ");
+    strs.push_str(&format!("{}%", (progress * 100.0) as u32));
 
-//     println!("{}", strs);
-// }
+    println!("{}", strs);
+}
 
 #[inline]
 fn get_buffer_index(height: usize, width: usize, x: usize, y: usize) -> usize {
@@ -295,6 +225,7 @@ impl Renderer {
     // [/comment]
     pub fn render(&self, scene: &Scene) {
         let mut frame_buffer = vec![Vec3::ZERO; scene.width * scene.height];
+
         let scale = (scene.fov * 0.5).to_radians().tan();
         let image_aspect_ratio = (scene.width as f32) / (scene.height as f32);
 
@@ -321,9 +252,9 @@ impl Renderer {
                 let dir = Vec3::new(x, y, -1.0) // Don't forget to normalize this direction!
                     .normalize();
                 let buf_index = get_buffer_index(scene.height, scene.width, i, j);
-                // frame_buffer[buf_index] = cast_ray(&eye_pos, &dir, scene, 0);
+                frame_buffer[buf_index] = scene.cast_ray(&Ray::new(eye_pos, dir), 0);
             }
-            // update_progress((j as f32) / (scene.height as f32));
+            update_progress((j as f32) / (scene.height as f32));
         }
 
         // save framebuffer to file
@@ -336,15 +267,15 @@ impl Renderer {
     }
 }
 
-// #[cfg(test)]
-// mod test {
-//     use super::*;
-//     #[test]
-//     fn test_update_progress() {
-//         update_progress(0.0);
-//         update_progress(0.1);
-//         update_progress(0.5);
-//         update_progress(0.9);
-//         update_progress(1.0);
-//     }
-// }
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_update_progress() {
+        update_progress(0.0);
+        update_progress(0.1);
+        update_progress(0.5);
+        update_progress(0.9);
+        update_progress(1.0);
+    }
+}
