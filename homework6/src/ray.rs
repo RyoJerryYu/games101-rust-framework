@@ -14,16 +14,20 @@ pub struct Ray {
 
 impl Display for Ray {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[origin:={}, direction={}, time={}]", self.origin, self.direction, self.t)
+        write!(
+            f,
+            "[origin:={}, direction={}, time={}]",
+            self.origin, self.direction, self.t
+        )
     }
 }
 
 impl Ray {
-    pub fn new(ori: Vec3, dir: Vec3, t: f32) -> Self {
+    pub fn new(ori: Vec3, dir: Vec3) -> Self {
         Self {
             origin: ori,
             direction: dir,
-            t,
+            t: 0.0,
             direction_inv: 1.0 / dir,
             t_min: 0.0,
             t_max: f32::MAX,
