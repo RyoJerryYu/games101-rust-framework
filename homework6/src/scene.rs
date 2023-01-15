@@ -1,4 +1,4 @@
-use crate::{light::Light, object::object::Object};
+use crate::{light::Light, object::object::Object, ray::Ray};
 use glam::Vec3;
 
 pub struct Scene {
@@ -47,9 +47,15 @@ impl Scene {
         &self.lights
     }
 
-    pub fn many() {
-        // many should be implement,
-        // look back after impling ray
+    pub fn build_bvh(&mut self) {
+        todo!()
+    }
+
+    pub fn cast_ray(&self, ray: &Ray, depth: u32) -> Vec3 {
+        todo!()
+    }
+
+    pub fn trace(&self, ray: &Ray, objects: &Vec<Box<dyn Object>>, t_near: f32, index: usize, hit_object: &mut Box<dyn Object>) -> bool {
         todo!()
     }
 }
