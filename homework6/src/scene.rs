@@ -190,6 +190,10 @@ impl Scene {
     }
 }
 
+// i is the incident ray, n is the normalized normal
+// i face to the surface, n face to the outside
+// so i dot n is the projection of i on n, and is negative
+// and i dot n * n is that projected length against n direction, so it's subtracted from i
 #[inline]
 fn reflect(i: Vec3, n: Vec3) -> Vec3 {
     i - 2.0 * i.dot(n) * n
@@ -209,6 +213,10 @@ fn reflect(i: Vec3, n: Vec3) -> Vec3 {
 // If the ray is inside, you need to invert the refractive indices and negate the normal N
 // [/comment]
 fn refract(i: Vec3, n: Vec3, ior: f32) -> Vec3 {
+    // cosi means the angle between the incident ray and the normal
+    // eta = 1/ior || eta = ior/1 , eta is the ratio of the refractive indices
+    //     = sin(theta_t) / sin(theta_i)
+    //     = IOR_out / IOR_in
     let mut cosi = i.dot(n).clamp(-1.0, 1.0);
     let (mut etai, mut etat) = (1.0, ior);
     let mut n = n;
@@ -220,6 +228,7 @@ fn refract(i: Vec3, n: Vec3, ior: f32) -> Vec3 {
     }
 
     let eta = etai / etat;
+    // k: the cosine^2 of the angle between the refracted ray and the normal
     let k = 1.0 - eta * eta * (1.0 - cosi * cosi);
 
     if k < 0.0 {
@@ -258,4 +267,16 @@ fn fresnel(i: Vec3, n: Vec3, ior: f32) -> f32 {
     return (rs * rs + rp * rp) / 2.0;
     // As a consequence of the conservation of energy, transmittance is given by:
     // kt = 1 - kr;
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    #[test]
+    fn test_reflect() {
+        let i = Vec3::new(1.0, 1.0, -1.0);
+        let n = Vec3::new(0.0, 0.0, 1.0);
+        let r = super::reflect(i, n);
+        assert_eq!(r, Vec3::new(1.0, 1.0, 1.0));
+    }
 }
