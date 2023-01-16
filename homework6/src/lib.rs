@@ -5,3 +5,4 @@ pub mod object;
 mod bvh;
 pub mod triangle;
 pub mod renderer;
+pub mod bounds3;

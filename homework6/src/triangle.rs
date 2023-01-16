@@ -1,6 +1,15 @@
+use anyhow::Result;
 use glam::{Mat3, Vec2, Vec3};
+use obj::load_obj;
 
-use crate::object::{object::Object, material::Material};
+use crate::{
+    bounds3::Bounds3,
+    bvh::BVHAccel,
+    object::{
+        material::{Material, MaterialType},
+        object::Object,
+    },
+};
 
 fn ray_triangle_intersect(
     v0: &Vec3,
@@ -48,6 +57,7 @@ fn ray_triangle_intersect(
     return false;
 }
 
+#[derive(Debug, Clone)]
 pub struct Triangle {
     // counter-clockwise order
     pub v0: Vec3,
@@ -64,7 +74,7 @@ pub struct Triangle {
     pub t2: Vec3,
 
     pub normal: Vec3,
-    pub m: Option<Material>
+    pub m: Option<Material>,
 }
 
 impl Object for Triangle {
@@ -114,21 +124,67 @@ impl Triangle {
             t1: Vec3::ZERO,
             t2: Vec3::ZERO,
             normal,
-            m
+            m,
         }
     }
 }
 
 pub struct MeshTriangle {
-    vertices: Vec<Vec3>,
-    num_triangles: usize,
-    vertex_index: Vec<usize>,
-    st_coordinates: Vec<Vec2>,
+    bounding_box: Bounds3,
+    triangles: Vec<Triangle>,
+    bvh: BVHAccel,
 }
 
 impl MeshTriangle {
-    pub fn new(filename: &str) -> Self {
-        todo!()
+    pub fn new(filename: &str) -> Result<Self> {
+        let input = std::io::BufReader::new(std::fs::File::open(filename)?);
+        let loadout: obj::Obj<obj::TexturedVertex> = load_obj(input)?;
+        dbg!("obj loaded");
+
+        let mut triangles = vec![];
+        let mut min_vert = Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY);
+        let mut max_vert = Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
+
+        for i in (0..loadout.indices.len()).step_by(3) {
+            let mut face_vertices = vec![];
+
+            for j in 0..3 {
+                // dbg!(i, j);
+                let vertice = &loadout.vertices[loadout.indices[i + j] as usize];
+                face_vertices[j] = Vec3::from_array(vertice.position) * 60.0;
+
+                min_vert = min_vert.min(face_vertices[j]);
+                max_vert = max_vert.max(face_vertices[j]);
+            }
+
+            let mut new_mat =
+                Material::new(MaterialType::DiffuseAndGlossy, Vec3::ONE * 0.5, Vec3::ZERO);
+            new_mat.kd = 0.6;
+            new_mat.ks = 0.0;
+            new_mat.specular_exponent = 0.0;
+
+            triangles.push(Triangle::new(
+                face_vertices[0],
+                face_vertices[1],
+                face_vertices[2],
+                Some(new_mat),
+            ))
+        }
+
+        let bounding_box = Bounds3::new(min_vert, max_vert);
+
+        let mut ptrs: Vec<Box<dyn Object>> = vec![];
+        for triangle in triangles.iter() {
+            ptrs.push(Box::new(triangle.clone()));
+        }
+
+        let bvh = BVHAccel::new(ptrs);
+
+        Ok(Self {
+            bounding_box,
+            triangles,
+            bvh,
+        })
     }
 }
 

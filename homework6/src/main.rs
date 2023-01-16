@@ -1,15 +1,10 @@
 use glam::Vec3;
-use homework6::{
-    light::{Light, PointLight},
-    renderer::Renderer,
-    scene::Scene,
-    triangle::MeshTriangle,
-};
+use homework6::{light::PointLight, renderer::Renderer, scene::Scene, triangle::MeshTriangle};
 
 fn main() {
     let mut scene = Scene::new(1280, 960);
 
-    let bunny = MeshTriangle::new("bunny.obj");
+    let bunny = MeshTriangle::new("bunny.obj").expect("load bunny.obj failed");
 
     scene.add_object(Box::new(bunny));
     scene.add_light(Box::new(PointLight::new(
