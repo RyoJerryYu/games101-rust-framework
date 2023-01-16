@@ -7,6 +7,7 @@ pub enum MaterialType {
     Reflection,
 }
 
+#[derive(Clone, Debug)]
 pub struct Material {
     pub m_type: MaterialType,
     pub m_color: Vec3,
