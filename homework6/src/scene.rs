@@ -1,5 +1,8 @@
 use anyhow::{Ok, Result};
-use std::ops::{Mul, Neg};
+use std::{
+    ops::{Mul, Neg},
+    sync::Arc,
+};
 
 use crate::{
     bvh::BVHAccel,
@@ -9,8 +12,18 @@ use crate::{
 };
 use glam::{Vec2, Vec3};
 
-pub struct Scene {
+// used for resolve the ownership problem of objects
+pub struct SceneObjectHolder {
     objects: Vec<Box<dyn Object>>,
+}
+
+impl SceneObjectHolder {
+    pub fn add_object(&mut self, object: Box<dyn Object>) {
+        self.objects.push(object);
+    }
+}
+
+pub struct Scene {
     lights: Vec<Box<dyn Light>>,
 
     pub width: usize,
@@ -26,7 +39,6 @@ pub struct Scene {
 impl Scene {
     pub fn new(w: usize, h: usize) -> Self {
         Self {
-            objects: vec![],
             lights: vec![],
             width: w,
             height: h,
@@ -43,16 +55,12 @@ impl Scene {
         }
     }
 
-    pub fn add_object(&mut self, object: Box<dyn Object>) {
-        self.objects.push(object);
+    pub fn new_object_holder(&self) -> SceneObjectHolder {
+        SceneObjectHolder { objects: vec![] }
     }
 
     pub fn add_light(&mut self, light: Box<dyn Light>) {
         self.lights.push(light);
-    }
-
-    pub fn get_objects(&self) -> &Vec<Box<dyn Object>> {
-        &self.objects
     }
 
     pub fn get_lights(&self) -> &Vec<Box<dyn Light>> {
@@ -63,8 +71,8 @@ impl Scene {
         self.bvh.as_ref()?.intersect(ray)
     }
 
-    pub fn build_bvh(&mut self) {
-        todo!()
+    pub fn build_bvh(&mut self, object_holder: SceneObjectHolder) {
+        self.bvh = Some(BVHAccel::new(object_holder.objects));
     }
 
     pub fn cast_ray(&self, ray: &Ray, depth: u32) -> Vec3 {
