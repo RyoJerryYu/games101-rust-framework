@@ -15,7 +15,7 @@ pub trait Object {
         index: &mut usize,
         uv: &mut Vec2,
     ) -> bool;
-    fn get_intersection(&self, ray: &Ray) -> Intersection;
+    fn get_intersection(&self, ray: &Ray) -> Option<Intersection>;
     fn get_surface_properties(
         &self,
         p: &Vec3,

@@ -1,3 +1,4 @@
+use anyhow::{Ok, Result};
 use std::ops::{Mul, Neg};
 
 use crate::{
@@ -58,8 +59,8 @@ impl Scene {
         &self.lights
     }
 
-    pub fn intersect(&self, ray: &Ray) -> Intersection {
-        self.bvh.as_ref().unwrap().intersect(ray)
+    pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
+        self.bvh.as_ref()?.intersect(ray)
     }
 
     pub fn build_bvh(&mut self) {
@@ -71,118 +72,111 @@ impl Scene {
             return Vec3::ZERO;
         }
 
-        let intersection = self.intersect(ray);
+        let intersection = match self.intersect(ray) {
+            Some(i) => i,
+            None => return self.background_color,
+        };
         let m = intersection.m;
         let hit_object = intersection.obj;
         let mut hit_color = self.background_color;
 
         let uv: Vec2 = Vec2::ZERO;
         let index: usize = 0;
-        if intersection.happended {
-            let hit_point = intersection.coords;
-            let mut n = intersection.normal;
-            let mut st: Vec2 = Vec2::ZERO;
-            hit_object.get_surface_properties(
-                &hit_point,
-                &ray.direction,
-                &index,
-                &uv,
-                &mut n,
-                &mut st,
-            );
+        let hit_point = intersection.coords;
+        let mut n = intersection.normal;
+        let mut st: Vec2 = Vec2::ZERO;
+        hit_object.get_surface_properties(&hit_point, &ray.direction, &index, &uv, &mut n, &mut st);
 
-            match m.get_type() {
-                MaterialType::ReflectionAndRefraction => {
-                    let reflection_direction = reflect(ray.direction, n).normalize();
-                    let refraction_direction = refract(ray.direction, n, m.ior).normalize();
+        match m.get_type() {
+            MaterialType::ReflectionAndRefraction => {
+                let reflection_direction = reflect(ray.direction, n).normalize();
+                let refraction_direction = refract(ray.direction, n, m.ior).normalize();
 
-                    let reflection_ray_orig = if reflection_direction.dot(n) < 0.0 {
-                        hit_point - n * self.epsilon
-                    } else {
-                        hit_point + n * self.epsilon
+                let reflection_ray_orig = if reflection_direction.dot(n) < 0.0 {
+                    hit_point - n * self.epsilon
+                } else {
+                    hit_point + n * self.epsilon
+                };
+                let refraction_ray_orig = if refraction_direction.dot(n) < 0.0 {
+                    hit_point - n * self.epsilon
+                } else {
+                    hit_point + n * self.epsilon
+                };
+
+                let reflection_color = self.cast_ray(
+                    &Ray::new(reflection_ray_orig, reflection_direction),
+                    depth + 1,
+                );
+                let refraction_color = self.cast_ray(
+                    &Ray::new(refraction_ray_orig, refraction_direction),
+                    depth + 1,
+                );
+
+                let kr = fresnel(ray.direction, n, m.ior);
+                hit_color = reflection_color * kr + refraction_color * (1.0 - kr);
+            }
+            MaterialType::Reflection => {
+                let kr = fresnel(ray.direction, n, m.ior);
+                let reflection_direction = reflect(ray.direction, n);
+                let reflection_ray_orig = if reflection_direction.dot(n) < 0.0 {
+                    hit_point + n * self.epsilon
+                } else {
+                    hit_point - n * self.epsilon
+                };
+                hit_color = self.cast_ray(
+                    &Ray::new(reflection_ray_orig, reflection_direction),
+                    depth + 1,
+                ) * kr;
+            }
+            _ => {
+                // [comment]
+                // We use the Phong illumation model int the default case. The phong model
+                // is composed of a diffuse and a specular reflection component.
+                // [/comment]
+                let mut light_amt: Vec3 = Vec3::ZERO;
+                let mut specular_color: Vec3 = Vec3::ZERO;
+                let shadow_point_orig = if ray.direction.dot(n) < 0.0 {
+                    hit_point + n * self.epsilon
+                } else {
+                    hit_point - n * self.epsilon
+                };
+
+                // [comment]
+                // Loop over all lights in the scene and sum their contribution up
+                // We also apply the lambert cosine law
+                // [/comment]
+                for light in self.get_lights() {
+                    // do something with area light here for next assignment
+
+                    let light_dir = light.position() - hit_point;
+                    // square of the distance between hitPoint and the light
+                    let light_distance_2 = light_dir.dot(light_dir);
+                    let light_dir = light_dir.normalize();
+                    let l_dot_n = light_dir.dot(n).max(0.0);
+
+                    // is the point in shadow, and is the nearest occluding object closer to the object than the light itself?
+                    let in_shadow = self
+                        .bvh
+                        .as_ref()
+                        .unwrap()
+                        .intersect(&Ray::new(shadow_point_orig, light_dir));
+
+                    light_amt = match in_shadow {
+                        Some(_) => light_amt + Vec3::ZERO,
+                        None => light_amt + light.intensity() * l_dot_n,
                     };
-                    let refraction_ray_orig = if refraction_direction.dot(n) < 0.0 {
-                        hit_point - n * self.epsilon
-                    } else {
-                        hit_point + n * self.epsilon
-                    };
 
-                    let reflection_color = self.cast_ray(
-                        &Ray::new(reflection_ray_orig, reflection_direction),
-                        depth + 1,
-                    );
-                    let refraction_color = self.cast_ray(
-                        &Ray::new(refraction_ray_orig, refraction_direction),
-                        depth + 1,
-                    );
-
-                    let kr = fresnel(ray.direction, n, m.ior);
-                    hit_color = reflection_color * kr + refraction_color * (1.0 - kr);
+                    let reflection_direction = reflect(-light_dir, n);
+                    specular_color += reflection_direction
+                        .dot(ray.direction)
+                        .neg()
+                        .max(0.0)
+                        .powf(m.specular_exponent)
+                        .mul(light.intensity());
                 }
-                MaterialType::Reflection => {
-                    let kr = fresnel(ray.direction, n, m.ior);
-                    let reflection_direction = reflect(ray.direction, n);
-                    let reflection_ray_orig = if reflection_direction.dot(n) < 0.0 {
-                        hit_point + n * self.epsilon
-                    } else {
-                        hit_point - n * self.epsilon
-                    };
-                    hit_color = self.cast_ray(
-                        &Ray::new(reflection_ray_orig, reflection_direction),
-                        depth + 1,
-                    ) * kr;
-                }
-                _ => {
-                    // [comment]
-                    // We use the Phong illumation model int the default case. The phong model
-                    // is composed of a diffuse and a specular reflection component.
-                    // [/comment]
-                    let mut light_amt: Vec3 = Vec3::ZERO;
-                    let mut specular_color: Vec3 = Vec3::ZERO;
-                    let shadow_point_orig = if ray.direction.dot(n) < 0.0 {
-                        hit_point + n * self.epsilon
-                    } else {
-                        hit_point - n * self.epsilon
-                    };
 
-                    // [comment]
-                    // Loop over all lights in the scene and sum their contribution up
-                    // We also apply the lambert cosine law
-                    // [/comment]
-                    for light in self.get_lights() {
-                        // do something with area light here for next assignment
-
-                        let light_dir = light.position() - hit_point;
-                        // square of the distance between hitPoint and the light
-                        let light_distance_2 = light_dir.dot(light_dir);
-                        let light_dir = light_dir.normalize();
-                        let l_dot_n = light_dir.dot(n).max(0.0);
-
-                        // is the point in shadow, and is the nearest occluding object closer to the object than the light itself?
-                        let in_shadow = self
-                            .bvh
-                            .as_ref()
-                            .unwrap()
-                            .intersect(&Ray::new(shadow_point_orig, light_dir))
-                            .happended;
-
-                        light_amt = match in_shadow {
-                            true => light_amt + Vec3::ZERO,
-                            false => light_amt + light.intensity() * l_dot_n,
-                        };
-
-                        let reflection_direction = reflect(-light_dir, n);
-                        specular_color += reflection_direction
-                            .dot(ray.direction)
-                            .neg()
-                            .max(0.0)
-                            .powf(m.specular_exponent)
-                            .mul(light.intensity());
-                    }
-
-                    hit_color = light_amt * hit_object.eval_diffuse_color(&st) * m.kd
-                        + specular_color * m.ks;
-                }
+                hit_color =
+                    light_amt * hit_object.eval_diffuse_color(&st) * m.kd + specular_color * m.ks;
             }
         }
 
