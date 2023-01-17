@@ -1,5 +1,6 @@
 use glam::{Vec2, Vec3};
 
+use crate::bounds3::Bounds3;
 use crate::ray::Ray;
 
 use crate::object::intersection::Intersection;
@@ -26,4 +27,5 @@ pub trait Object {
         st: &mut Vec2,
     );
     fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3;
+    fn get_bounds(&self) -> &Bounds3;
 }

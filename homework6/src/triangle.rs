@@ -168,6 +168,10 @@ impl Object for Triangle {
     fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3 {
         Vec3::ONE * 0.5
     }
+
+    fn get_bounds(&self) -> &Bounds3 {
+        todo!()
+    }
 }
 
 impl Triangle {
@@ -232,7 +236,7 @@ impl MeshTriangle {
             ))
         }
 
-        let bounding_box = Bounds3::new(min_vert, max_vert);
+        let bounding_box = Bounds3::from_min_max(min_vert, max_vert);
 
         let mut ptrs: Vec<Box<dyn Object>> = vec![];
         for triangle in triangles.iter() {
@@ -279,6 +283,10 @@ impl Object for MeshTriangle {
 
     fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3 {
         Vec3::ONE * 0.5
+    }
+
+    fn get_bounds(&self) -> &Bounds3 {
+        &self.bounding_box
     }
     // fn intersect(
     //     &self,
