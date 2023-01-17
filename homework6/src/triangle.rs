@@ -7,7 +7,7 @@ use crate::{
     bvh::BVHAccel,
     object::{
         material::{Material, MaterialType},
-        object::Object,
+        object::Object, intersection::Intersection,
     },
 };
 
@@ -88,7 +88,22 @@ impl Object for Triangle {
         todo!()
     }
 
-    fn get_intersection(&self, ray: &crate::ray::Ray) -> crate::object::intersection::Intersection {
+    fn get_intersection(&self, ray: &crate::ray::Ray) -> Option<Intersection> {
+        // let inter = Intersection {
+        //     p: Vec3::ZERO,
+        //     uv: Vec2::ZERO,
+        //     n: Vec3::ZERO,
+        //     t: 0.0,
+        //     index: 0,
+        //     m: Material {
+        //         m_type: MaterialType::Diffuse,
+        //         diffuse_color: Vec3::ZERO,
+        //         emission_color: Vec3::ZERO,
+        //         specular_exponent: 0.0,
+        //         ior: 0.0,
+        //         diffuse_texture: None,
+        //     },
+        // };
         todo!()
     }
 
@@ -199,7 +214,7 @@ impl Object for MeshTriangle {
         todo!()
     }
 
-    fn get_intersection(&self, ray: &crate::ray::Ray) -> crate::object::intersection::Intersection {
+    fn get_intersection(&self, ray: &crate::ray::Ray) -> Option<Intersection> {
         todo!()
     }
 

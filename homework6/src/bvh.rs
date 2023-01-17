@@ -8,7 +8,7 @@ impl BVHAccel {
     pub fn new(p: Vec<Box<dyn Object>>) -> Self {
         todo!()
     }
-    pub fn intersect(&self, ray: &Ray) -> Intersection {
+    pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
         todo!()
     }
 }
