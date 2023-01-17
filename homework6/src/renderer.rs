@@ -230,7 +230,7 @@ impl Renderer {
         let image_aspect_ratio = (scene.width as f32) / (scene.height as f32);
 
         // Use this variable as the eye position to start your rays.
-        let eye_pos = Vec3::ZERO;
+        let eye_pos = Vec3::new(-1.0, 5.0, 10.0);
         // j represent the height value, which 0 on the top
         for j in 0..scene.height {
             // i represent the width value
