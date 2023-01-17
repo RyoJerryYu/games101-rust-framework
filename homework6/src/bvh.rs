@@ -18,6 +18,12 @@ struct BVHBuildNode {
     object: Option<Box<dyn Object>>,
 }
 
+impl BVHBuildNode {
+    pub fn get_intersection(&self, ray: &Ray) -> Option<Intersection> {
+        unimplemented!()
+    }
+}
+
 pub struct BVHAccel {
     maxPrimsInNode: usize,
     splitMethod: BVHSplitMethod,
@@ -121,6 +127,6 @@ impl BVHAccel {
     }
 
     pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
-        todo!()
+        self.root.as_ref()?.get_intersection(ray)
     }
 }
