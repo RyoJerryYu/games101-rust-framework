@@ -1,8 +1,4 @@
-use anyhow::{Ok, Result};
-use std::{
-    ops::{Mul, Neg},
-    sync::Arc,
-};
+use std::ops::{Mul, Neg};
 
 use crate::{
     bvh::BVHAccel,
