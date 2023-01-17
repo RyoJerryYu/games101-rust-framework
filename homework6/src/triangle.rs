@@ -6,8 +6,9 @@ use crate::{
     bounds3::Bounds3,
     bvh::BVHAccel,
     object::{
+        intersection::Intersection,
         material::{Material, MaterialType},
-        object::Object, intersection::Intersection,
+        object::Object,
     },
 };
 
@@ -75,6 +76,7 @@ pub struct Triangle {
 
     pub normal: Vec3,
     pub m: Option<Material>,
+    // bounding_box: Bounds3,
 }
 
 impl Object for Triangle {
@@ -85,10 +87,38 @@ impl Object for Triangle {
         index: &mut usize,
         uv: &mut Vec2,
     ) -> bool {
-        todo!()
+        return false;
     }
 
     fn get_intersection(&self, ray: &crate::ray::Ray) -> Option<Intersection> {
+        if ray.direction.dot(self.normal) > 0.0 {
+            return None;
+        }
+
+        let pvec = ray.direction.cross(self.e2);
+        let det = self.e1.dot(pvec);
+        if det < 0.0001 {
+            return None;
+        }
+
+        let det_inv = 1.0 / det;
+        let tvec = ray.origin - self.v0;
+        let u = tvec.dot(pvec) * det_inv;
+        if u < 0.0 || u > 1.0 {
+            return None;
+        }
+
+        let qvec = tvec.cross(self.e1);
+        let v = ray.direction.dot(qvec) * det_inv;
+        if v < 0.0 || u + v > 1.0 {
+            return None;
+        }
+
+        let t_temp = self.e2.dot(qvec) * det_inv;
+
+        todo!()
+        // TODO find ray triangle intersection
+
         // let inter = Intersection {
         //     p: Vec3::ZERO,
         //     uv: Vec2::ZERO,
@@ -104,7 +134,6 @@ impl Object for Triangle {
         //         diffuse_texture: None,
         //     },
         // };
-        todo!()
     }
 
     fn get_surface_properties(
@@ -116,11 +145,28 @@ impl Object for Triangle {
         n: &mut Vec3,
         st: &mut Vec2,
     ) {
+        // let verts = (0..3)
+        //     .map(|i| self.vertex_index[index * 3 + i])
+        //     .map(|vi| self.vertices[vi])
+        //     .collect::<Vec<Vec3>>();
+        // assert!(verts.len() == 3);
+
+        // let e0 = (verts[1] - verts[0]).normalize();
+        // let e1 = (verts[2] - verts[1]).normalize();
+        // *n = e0.cross(e1).normalize();
+
+        // let sts = (0..3)
+        //     .map(|i| self.vertex_index[index * 3 + i])
+        //     .map(|vi| self.st_coordinates[vi])
+        //     .collect::<Vec<Vec2>>();
+        // assert!(sts.len() == 3);
+
+        // *st = sts[0] * (1.0 - uv.x - uv.y) + sts[1] * uv.x + sts[2] * uv.y;
         todo!()
     }
 
     fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3 {
-        todo!()
+        Vec3::ONE * 0.5
     }
 }
 
@@ -211,6 +257,7 @@ impl Object for MeshTriangle {
         index: &mut usize,
         uv: &mut Vec2,
     ) -> bool {
+        // don't need this method?
         todo!()
     }
 
@@ -231,7 +278,7 @@ impl Object for MeshTriangle {
     }
 
     fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3 {
-        todo!()
+        Vec3::ONE * 0.5
     }
     // fn intersect(
     //     &self,

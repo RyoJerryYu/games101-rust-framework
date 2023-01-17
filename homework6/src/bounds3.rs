@@ -1,5 +1,6 @@
 use glam::Vec3;
 
+#[derive(Debug, Clone)]
 pub struct Bounds3 {
     pub min: Vec3,
     pub max: Vec3,
