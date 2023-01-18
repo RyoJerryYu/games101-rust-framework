@@ -68,7 +68,9 @@ impl Scene {
     }
 
     pub fn build_bvh(&mut self, object_holder: SceneObjectHolder) {
+        println!("Scene build BVH start");
         self.bvh = Some(BVHAccel::new(object_holder.objects));
+        println!("Scene build BVH end");
     }
 
     pub fn cast_ray(&self, ray: &Ray, depth: u32) -> Vec3 {
