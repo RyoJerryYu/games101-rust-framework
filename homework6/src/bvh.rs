@@ -1,5 +1,3 @@
-use glam::Vec3;
-
 use crate::{
     bounds3::{Bounds3, Dimension},
     object::{intersection::Intersection, object::Object},
@@ -35,7 +33,8 @@ impl BVHBuildNode {
         match &self.content {
             NodeContent::Leaf { object } => object.get_intersection(ray),
             NodeContent::BiNode { left, right } => {
-                let (intersect_l, intersect_r) = (left.get_intersection(ray), right.get_intersection(ray));
+                let (intersect_l, intersect_r) =
+                    (left.get_intersection(ray), right.get_intersection(ray));
                 if intersect_l.is_none() {
                     return intersect_r; // some or none
                 }
@@ -51,7 +50,7 @@ impl BVHBuildNode {
                     return Some(intersect_l);
                 }
                 return Some(intersect_r);
-            },
+            }
         }
     }
 }
