@@ -105,8 +105,8 @@ impl Object for Triangle {
             coords: ray.on(t_temp),
             normal: self.normal,
             distance: t_temp,
-            obj: Box::new(self.clone()), // todo should use reference
-            m: Box::new(self.m.clone()), // also be reference
+            obj: self,
+            m: &self.m,
         };
         return Some(inter);
 
