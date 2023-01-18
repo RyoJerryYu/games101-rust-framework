@@ -316,8 +316,8 @@ impl Renderer {
                 // x and y is the position where ray arrived on z = -1
                 // and aware that y is upside down
                 let y =
-                    -(j as f32 - scene.height as f32 / 2.0) / (scene.height as f32 / 2.0) * scale;
-                let x = (i as f32 - scene.width as f32 / 2.0) / (scene.width as f32 / 2.0)
+                    -(j as f32 + 0.5 - scene.height as f32 / 2.0) / (scene.height as f32 / 2.0) * scale;
+                let x = (i as f32 + 0.5 - scene.width as f32 / 2.0) / (scene.width as f32 / 2.0)
                     * scale
                     * image_aspect_ratio;
 
