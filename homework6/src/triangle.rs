@@ -1,5 +1,5 @@
 use anyhow::Result;
-use glam::{Mat3, Vec2, Vec3};
+use glam::{Vec2, Vec3};
 use obj::load_obj;
 
 use crate::{
@@ -11,52 +11,6 @@ use crate::{
         object::Object,
     },
 };
-
-fn ray_triangle_intersect(
-    v0: &Vec3,
-    v1: &Vec3,
-    v2: &Vec3,
-    orig: &Vec3,
-    dir: &Vec3,
-    tnear: &mut f32,
-    u: &mut f32,
-    v: &mut f32,
-) -> bool {
-    // TODO: Implement this function that tests whether the triangle
-    // that's specified bt v0, v1 and v2 intersects with the ray (whose
-    // origin is *orig* and direction is *dir*)
-    // Also don't forget to update tnear, u and v.
-
-    // intersect -> the point that ray cross the plane is in the triangle
-    // for i in 0..2:
-    //   n_plane dot (v[i] - p) = 0
-    //   => n_plane dot (v[i] - orig - t * dir) = 0
-    //   => n_plane dot (v[i] - orig) = t * n_plane dot dir
-    //   => t = n_plane dot (v[i] - orig) / n_plane dot dir
-    // where n_plane is a cross product for edges
-
-    // second method:
-    // p = (1 - a - b)*v[0] + a*v[1] + b*v[2]
-    //   = orig + t * dir
-    // =>
-    // a*(v[1] - v[0]) + b*(v[2]-v[0]) + t*(-dir) = orig - v[0]
-    // [(v[1]-v[0]), (v[2]-v[0], -dir)] dot [a,b,t]T = (orig - v[0])
-    // [a,b,t]T = ([(v[1]-v[0]), (v[2]-v[0], -dir)])^-1 * (orig-v[0])
-
-    // mat * [a,b,t]T = (orig - v[0])
-    let mat = Mat3::from_cols(*v1 - *v0, *v2 - *v0, -*dir);
-    let Vec3 { x: a, y: b, z: t } = mat.inverse() * (*orig - *v0);
-
-    if a > 0.0 && b > 0.0 && (1.0 - a - b) > 0.0 && t > 0.0 {
-        // well, according to other codes, u,v is the barycentric coordinate
-        *tnear = t;
-        *u = a;
-        *v = b;
-        return true;
-    }
-
-    return false;
-}
 
 #[derive(Debug, Clone)]
 pub struct Triangle {
@@ -75,8 +29,8 @@ pub struct Triangle {
     pub t2: Vec3,
 
     pub normal: Vec3,
-    pub m: Option<Material>,
-    // bounding_box: Bounds3,
+    pub m: Material,
+    bounding_box: Bounds3,
 }
 
 impl Object for Triangle {
@@ -92,17 +46,42 @@ impl Object for Triangle {
 
     fn get_intersection(&self, ray: &crate::ray::Ray) -> Option<Intersection> {
         if ray.direction.dot(self.normal) > 0.0 {
+            // ray casted from inner
             return None;
         }
+        // P = (1-u-v)A + uB + vC = A + u(B-A) + v(C-A)
+        // P = O + tD
+        // => O-A = -tD + u(B-A) + v(C-A)
+        // where B-A = e1 and C-A = e2
 
-        let pvec = ray.direction.cross(self.e2);
-        let det = self.e1.dot(pvec);
+        // => O-A = [-D, e1, e2] dot [t, u, v]^T
+        // => [t, u, v]^T = [-D, e1, e2]^-1 * (O-A)
+
+        // solving the inv of matrix, could apply cramer's rule, then there is:
+        // [t, u, v]^T = 1/det * [|T e1 e2|, |-D T e2|, |-D e1 T|]^T
+        // where T = O-A
+
+        // note:
+        // |T e1 e2| = (T x e1) dot e2
+        // |-D T e2| = (-D x T) dot e2 = (D x e2) dot T
+        // |-D e1 T| = (-D x e1) dot T = (T x e1) dot D
+        // so we could call (D x e2) is P and (T x e1) is Q and reuse them
+
+        // it's fast and less memory usage, but hard to read :(
+
+        let pvec = ray.direction.cross(self.e2); // D ✖️ e2
+        let det = self.e1.dot(pvec); // det([-D, e1, e2])
         if det < 0.0001 {
+            // e1 is on the plane of ray and e2,
+            // a.k.a almost horizontal ray
+            // or the angle between e1 and e2 is almost 0
+
+            // in another hand: det close to zero, could not solve the equation
             return None;
         }
 
         let det_inv = 1.0 / det;
-        let tvec = ray.origin - self.v0;
+        let tvec = ray.origin - self.v0; // O-A
         let u = tvec.dot(pvec) * det_inv;
         if u < 0.0 || u > 1.0 {
             return None;
@@ -116,24 +95,44 @@ impl Object for Triangle {
 
         let t_temp = self.e2.dot(qvec) * det_inv;
 
-        todo!()
         // TODO find ray triangle intersection
+        if t_temp < 0.0 {
+            // behind light
+            return None;
+        }
 
-        // let inter = Intersection {
-        //     p: Vec3::ZERO,
-        //     uv: Vec2::ZERO,
-        //     n: Vec3::ZERO,
-        //     t: 0.0,
-        //     index: 0,
-        //     m: Material {
-        //         m_type: MaterialType::Diffuse,
-        //         diffuse_color: Vec3::ZERO,
-        //         emission_color: Vec3::ZERO,
-        //         specular_exponent: 0.0,
-        //         ior: 0.0,
-        //         diffuse_texture: None,
-        //     },
-        // };
+        let inter = Intersection {
+            coords: ray.on(t_temp),
+            normal: self.normal,
+            distance: t_temp,
+            obj: Box::new(self.clone()), // todo should use reference
+            m: Box::new(self.m.clone()), // also be reference
+        };
+        return Some(inter);
+
+        //     let mut intersect = false;
+        //     for k in 0..self.num_triangles {
+        //         let verts = (0..3)
+        //             .map(|i| self.vertex_index[k * 3 + i])
+        //             .map(|vi| self.vertices[vi])
+        //             .collect::<Vec<Vec3>>();
+        //         assert!(verts.len() == 3);
+
+        //         let (mut t, mut u, mut v) = (0.0, 0.0, 0.0);
+
+        //         if ray_triangle_intersect(
+        //             &verts[0], &verts[1], &verts[2], orig, dir, &mut t, &mut u, &mut v,
+        //         ) && t < *tnear
+        //         {
+        //             *tnear = t;
+        //             uv.x = u;
+        //             uv.y = v;
+        //             *index = k;
+        //             intersect |= true;
+        //         }
+        //     }
+
+        //     return intersect;
     }
 
     fn get_surface_properties(
@@ -145,24 +144,8 @@ impl Object for Triangle {
         n: &mut Vec3,
         st: &mut Vec2,
     ) {
-        // let verts = (0..3)
-        //     .map(|i| self.vertex_index[index * 3 + i])
-        //     .map(|vi| self.vertices[vi])
-        //     .collect::<Vec<Vec3>>();
-        // assert!(verts.len() == 3);
-
-        // let e0 = (verts[1] - verts[0]).normalize();
-        // let e1 = (verts[2] - verts[1]).normalize();
-        // *n = e0.cross(e1).normalize();
-
-        // let sts = (0..3)
-        //     .map(|i| self.vertex_index[index * 3 + i])
-        //     .map(|vi| self.st_coordinates[vi])
-        //     .collect::<Vec<Vec2>>();
-        // assert!(sts.len() == 3);
-
-        // *st = sts[0] * (1.0 - uv.x - uv.y) + sts[1] * uv.x + sts[2] * uv.y;
-        todo!()
+        *n = self.normal;
+        // don't need to change st
     }
 
     fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3 {
@@ -170,15 +153,16 @@ impl Object for Triangle {
     }
 
     fn get_bounds(&self) -> &Bounds3 {
-        todo!()
+        &self.bounding_box
     }
 }
 
 impl Triangle {
-    pub fn new(v0: Vec3, v1: Vec3, v2: Vec3, m: Option<Material>) -> Self {
+    pub fn new(v0: Vec3, v1: Vec3, v2: Vec3, m: Material) -> Self {
         let e1 = v1 - v0;
         let e2 = v2 - v0;
         let normal = e1.cross(e2).normalize();
+        let bounding_box = Bounds3::from_min_max(v0, v1).union_point(v2);
         Self {
             v0,
             v1,
@@ -190,6 +174,7 @@ impl Triangle {
             t2: Vec3::ZERO,
             normal,
             m,
+            bounding_box,
         }
     }
 }
@@ -232,7 +217,7 @@ impl MeshTriangle {
                 face_vertices[0],
                 face_vertices[1],
                 face_vertices[2],
-                Some(new_mat),
+                new_mat,
             ))
         }
 
@@ -266,7 +251,7 @@ impl Object for MeshTriangle {
     }
 
     fn get_intersection(&self, ray: &crate::ray::Ray) -> Option<Intersection> {
-        todo!()
+        self.bvh.intersect(ray)
     }
 
     fn get_surface_properties(
@@ -278,6 +263,7 @@ impl Object for MeshTriangle {
         n: &mut Vec3,
         st: &mut Vec2,
     ) {
+        // don't need, not called
         todo!()
     }
 
@@ -288,79 +274,4 @@ impl Object for MeshTriangle {
     fn get_bounds(&self) -> &Bounds3 {
         &self.bounding_box
     }
-    // fn intersect(
-    //     &self,
-    //     orig: &glam::Vec3,
-    //     dir: &glam::Vec3,
-    //     tnear: &mut f32,
-    //     index: &mut usize,
-    //     uv: &mut glam::Vec2,
-    // ) -> bool {
-    //     let mut intersect = false;
-    //     for k in 0..self.num_triangles {
-    //         let verts = (0..3)
-    //             .map(|i| self.vertex_index[k * 3 + i])
-    //             .map(|vi| self.vertices[vi])
-    //             .collect::<Vec<Vec3>>();
-    //         assert!(verts.len() == 3);
-
-    //         let (mut t, mut u, mut v) = (0.0, 0.0, 0.0);
-
-    //         if ray_triangle_intersect(
-    //             &verts[0], &verts[1], &verts[2], orig, dir, &mut t, &mut u, &mut v,
-    //         ) && t < *tnear
-    //         {
-    //             *tnear = t;
-    //             uv.x = u;
-    //             uv.y = v;
-    //             *index = k;
-    //             intersect |= true;
-    //         }
-    //     }
-
-    //     return intersect;
-    // }
-
-    // fn get_surface_properties(
-    //     &self,
-    //     p: &glam::Vec3,
-    //     dir: &glam::Vec3,
-    //     index: &usize,
-    //     uv: &glam::Vec2,
-    //     n: &mut glam::Vec3,
-    //     st: &mut glam::Vec2,
-    // ) {
-    //     let verts = (0..3)
-    //         .map(|i| self.vertex_index[index * 3 + i])
-    //         .map(|vi| self.vertices[vi])
-    //         .collect::<Vec<Vec3>>();
-    //     assert!(verts.len() == 3);
-
-    //     let e0 = (verts[1] - verts[0]).normalize();
-    //     let e1 = (verts[2] - verts[1]).normalize();
-    //     *n = e0.cross(e1).normalize();
-
-    //     let sts = (0..3)
-    //         .map(|i| self.vertex_index[index * 3 + i])
-    //         .map(|vi| self.st_coordinates[vi])
-    //         .collect::<Vec<Vec2>>();
-    //     assert!(sts.len() == 3);
-
-    //     *st = sts[0] * (1.0 - uv.x - uv.y) + sts[1] * uv.x + sts[2] * uv.y;
-    // }
-
-    // fn get_render_payload(&self) -> &ObjectRenderPayload {
-    //     &self.render_payload
-    // }
-
-    // fn eval_diffuse_color(&self, st: &Vec2) -> Vec3 {
-    //     let scale = 5.0;
-    //     let (w, h) = (st.x * scale, st.y * scale);
-    //     let pattern = ((w - w.floor()) > 0.5) ^ ((h - h.floor()) > 0.5);
-    //     if pattern {
-    //         Vec3::new(0.937, 0.937, 0.231)
-    //     } else {
-    //         Vec3::new(0.815, 0.235, 0.031)
-    //     }
-    // }
 }
