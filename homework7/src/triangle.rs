@@ -208,9 +208,7 @@ impl MeshTriangle {
             }
 
             let mut new_mat =
-                Material::new(MaterialType::DiffuseAndGlossy, Vec3::ONE * 0.5, Vec3::ZERO);
-            new_mat.kd = 0.6;
-            new_mat.ks = 0.0;
+                Material::new(MaterialType::Diffuse, Vec3::ONE * 0.5, Vec3::ZERO);
             new_mat.specular_exponent = 0.0;
 
             triangles.push(Triangle::new(
