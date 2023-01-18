@@ -65,7 +65,7 @@ impl Renderer {
                     * scale
                     * image_aspect_ratio;
 
-                let dir = Vec3::new(x, y, -1.0) // Don't forget to normalize this direction!
+                let dir = Vec3::new(-x, -y, 1.0) // Don't forget to normalize this direction!
                     .normalize();
                 let buf_index = get_buffer_index(scene.height, scene.width, i, j);
                 frame_buffer[buf_index] = scene.cast_ray(&Ray::new(eye_pos, dir), 0);
