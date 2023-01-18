@@ -188,7 +188,7 @@ pub struct MeshTriangle {
 impl MeshTriangle {
     pub fn new(filename: &str) -> Result<Self> {
         let input = std::io::BufReader::new(std::fs::File::open(filename)?);
-        let loadout: obj::Obj<obj::TexturedVertex> = load_obj(input)?;
+        let loadout: obj::Obj<obj::Position> = load_obj(input)?;
         dbg!("obj loaded");
 
         let mut triangles = vec![];
@@ -196,7 +196,7 @@ impl MeshTriangle {
         let mut max_vert = Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
 
         for i in (0..loadout.indices.len()).step_by(3) {
-            let mut face_vertices = vec![];
+            let mut face_vertices = vec![Vec3::ZERO;3];
 
             for j in 0..3 {
                 // dbg!(i, j);
