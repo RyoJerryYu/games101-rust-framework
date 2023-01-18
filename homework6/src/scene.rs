@@ -96,6 +96,8 @@ impl Scene {
                 let reflection_direction = reflect(ray.direction, n).normalize();
                 let refraction_direction = refract(ray.direction, n, m.ior).normalize();
 
+                // means getting the point over object surface, (while direction could face into object)
+                // preventing cross the object again.
                 let reflection_ray_orig = if reflection_direction.dot(n) < 0.0 {
                     hit_point - n * self.epsilon
                 } else {
@@ -122,10 +124,13 @@ impl Scene {
             MaterialType::Reflection => {
                 let kr = fresnel(ray.direction, n, m.ior);
                 let reflection_direction = reflect(ray.direction, n);
+
+                // and here is wrong in the official homework6 code
+                // I fixed it.
                 let reflection_ray_orig = if reflection_direction.dot(n) < 0.0 {
-                    hit_point + n * self.epsilon
-                } else {
                     hit_point - n * self.epsilon
+                } else {
+                    hit_point + n * self.epsilon
                 };
                 hit_color = self.cast_ray(
                     &Ray::new(reflection_ray_orig, reflection_direction),
@@ -139,6 +144,9 @@ impl Scene {
                 // [/comment]
                 let mut light_amt: Vec3 = Vec3::ZERO;
                 let mut specular_color: Vec3 = Vec3::ZERO;
+
+                // ray.direction is facing to the surface,
+                // and here the sign here is right.
                 let shadow_point_orig = if ray.direction.dot(n) < 0.0 {
                     hit_point + n * self.epsilon
                 } else {
@@ -192,6 +200,7 @@ impl Scene {
 // i face to the surface, n face to the outside
 // so i dot n is the projection of i on n, and is negative
 // and i dot n * n is that projected length against n direction, so it's subtracted from i
+// (result always facing to the outside, whatever n facing to.)
 #[inline]
 fn reflect(i: Vec3, n: Vec3) -> Vec3 {
     i - 2.0 * i.dot(n) * n
