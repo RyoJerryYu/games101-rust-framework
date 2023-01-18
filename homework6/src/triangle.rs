@@ -228,7 +228,9 @@ impl MeshTriangle {
             ptrs.push(Box::new(triangle.clone()));
         }
 
+        println!("MeshTriangle build bvh start");
         let bvh = BVHAccel::new(ptrs);
+        println!("MeshTriangle build bvh end");
 
         Ok(Self {
             bounding_box,

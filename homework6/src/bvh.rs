@@ -1,3 +1,5 @@
+use std::time::Instant;
+
 use crate::{
     bounds3::{Bounds3, Dimension},
     object::{intersection::Intersection, object::Object},
@@ -72,10 +74,9 @@ impl BVHAccel {
             return res;
         }
 
-        // start time
+        let start_time = Instant::now();
         res.root = Some(Box::new(BVHAccel::recursive_build(p)));
-        // end time
-        // logging...
+        println!("BVHAccel revursive build took {} seconds", start_time.elapsed().as_secs_f32());
 
         return res;
     }
