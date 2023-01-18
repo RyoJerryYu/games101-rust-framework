@@ -24,11 +24,11 @@ impl Material {
         Self::new(MaterialType::DiffuseAndGlossy, Vec3::ONE, Vec3::ZERO)
     }
 
-    pub const fn new(t: MaterialType, c: Vec3, e: Vec3) -> Self {
+    pub const fn new(t: MaterialType, color: Vec3, emission: Vec3) -> Self {
         Self {
             m_type: t,
-            m_color: c,
-            m_emission: e,
+            m_color: color,
+            m_emission: emission,
 
             ior: 0.0,
             kd: 0.0,
