@@ -11,16 +11,48 @@ enum BVHSplitMethod {
     SAH,
 }
 
+enum NodeContent {
+    Leaf {
+        object: Box<dyn Object>,
+    },
+    BiNode {
+        left: Box<BVHBuildNode>,
+        right: Box<BVHBuildNode>,
+    },
+}
+
 struct BVHBuildNode {
     bounds: Bounds3,
-    left: Option<Box<BVHBuildNode>>,
-    right: Option<Box<BVHBuildNode>>,
-    object: Option<Box<dyn Object>>,
+    content: NodeContent,
 }
 
 impl BVHBuildNode {
     pub fn get_intersection(&self, ray: &Ray) -> Option<Intersection> {
-        unimplemented!()
+        if !self.bounds.intersect_p(ray) {
+            return None;
+        }
+
+        match &self.content {
+            NodeContent::Leaf { object } => object.get_intersection(ray),
+            NodeContent::BiNode { left, right } => {
+                let (intersect_l, intersect_r) = (left.get_intersection(ray), right.get_intersection(ray));
+                if intersect_l.is_none() {
+                    return intersect_r; // some or none
+                }
+
+                if intersect_r.is_none() {
+                    return intersect_l; // always some...
+                }
+
+                // both some, get the nearer one not behind origin
+                let (intersect_l, intersect_r) = (intersect_l.unwrap(), intersect_r.unwrap());
+
+                if intersect_l.distance < intersect_r.distance {
+                    return Some(intersect_l);
+                }
+                return Some(intersect_r);
+            },
+        }
     }
 }
 
@@ -58,9 +90,9 @@ impl BVHAccel {
             1 => {
                 return BVHBuildNode {
                     bounds: objects[0].get_bounds().clone(),
-                    left: None,
-                    right: None,
-                    object: objects.into_iter().nth(0),
+                    content: NodeContent::Leaf {
+                        object: objects.into_iter().nth(0).unwrap(),
+                    },
                 };
             }
             2 => {
@@ -72,9 +104,10 @@ impl BVHAccel {
 
                 return BVHBuildNode {
                     bounds: left.bounds.union(&right.bounds),
-                    left: Some(Box::new(left)),
-                    right: Some(Box::new(right)),
-                    object: None,
+                    content: NodeContent::BiNode {
+                        left: Box::new(left),
+                        right: Box::new(right),
+                    },
                 };
             }
             _ => {
@@ -118,9 +151,10 @@ impl BVHAccel {
 
                 return BVHBuildNode {
                     bounds: left.bounds.union(&right.bounds),
-                    left: Some(Box::new(left)),
-                    right: Some(Box::new(right)),
-                    object: None,
+                    content: NodeContent::BiNode {
+                        left: Box::new(left),
+                        right: Box::new(right),
+                    },
                 };
             }
         }

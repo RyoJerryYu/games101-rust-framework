@@ -106,6 +106,7 @@ impl Bounds3 {
         if t_far < 0.0 {
             return false;
         }
+        // note that if origin is inside the box, it should be true too
         return true;
     }
 }
