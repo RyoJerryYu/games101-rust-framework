@@ -101,6 +101,11 @@ impl Scene {
     }
     // Implementation of Path Tracing
     pub fn cast_ray(&self, ray: &Ray) -> Vec3 {
+        match self.intersect(ray) {
+            Some(i) => return i.m.kd * 1000.0 / i.distance,
+            None => (),
+        }
+
         let intersection = match self.intersect(ray) {
             None => return self.background_color,
             Some(i) => i,
