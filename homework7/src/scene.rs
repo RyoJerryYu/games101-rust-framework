@@ -5,9 +5,13 @@ use std::{
 
 use crate::{
     bvh::BVHAccel,
-    global::get_random_float,
+    global::{get_random_float, EPSILON},
     light::Light,
-    object::{intersection::{Intersection, SampleResult}, material::MaterialType, object::Object},
+    object::{
+        intersection::{Intersection, SampleResult},
+        material::MaterialType,
+        object::Object,
+    },
     ray::Ray,
 };
 use glam::{Vec2, Vec3};
@@ -21,7 +25,8 @@ pub struct Scene {
     pub fov: f32,
     pub background_color: Vec3,
     pub max_depth: u32,
-    pub epsilon: f32,
+
+    russian_roulette: f32,
 
     bvh: Option<BVHAccel>,
 }
@@ -40,7 +45,8 @@ impl Scene {
                 z: 0.843137,
             },
             max_depth: 5,
-            epsilon: 0.00001,
+
+            russian_roulette: 0.8,
 
             bvh: None,
         }
@@ -94,18 +100,61 @@ impl Scene {
         None
     }
     // Implementation of Path Tracing
-    pub fn cast_ray(&self, ray: &Ray, depth: u32) -> Vec3 {
-        // TO DO Implement Path Tracing Algorithm here
-        // let (mut pdf_light, mut intersect_light) = (0.0, Intersection);
-
+    pub fn cast_ray(&self, ray: &Ray) -> Vec3 {
         let intersection = match self.intersect(ray) {
             None => return self.background_color,
             Some(i) => i,
         };
 
-        todo!()
+        let m = intersection.m;
+        let hit_object = intersection.obj;
+        let mut hit_color: Vec3;
+        let wo = -ray.direction;
+
+        let uv: Vec2 = Vec2::ZERO;
+        let index: usize = 0;
+        let hit_point = intersection.coords;
+        let mut n = intersection.normal;
+        let mut st: Vec2 = Vec2::ZERO;
+        hit_object.get_surface_properties(&hit_point, &ray.direction, &index, &uv, &mut n, &mut st);
+
+        // l from the light directly
+        let mut l_direct = Vec3::ZERO;
+        if let Some(sample_result) = self.sample_light() {
+            let p = intersection.coords; // the point that ray bounced
+            let x = sample_result.coords; // the point that light emitted
+            let ws = x - p;
+            if let Some(intersection_to_light) = self.intersect(&Ray::new(p, ws)) {
+                if intersection_to_light.coords.abs_diff_eq(x, EPSILON) {
+                    // ray from p to x is not blocked in the middle
+                    l_direct = intersection_to_light.m.get_emission()
+                        * intersection.m.eval(ws, wo, n)
+                        * ws.dot(n)
+                        * ws.dot(intersection_to_light.normal)
+                        / (x - p).length_squared()
+                        / sample_result.pdf;
+                }
+            }
+        }
+
+        if get_random_float() > self.russian_roulette {
+            // exit the recursive
+            return l_direct;
+        }
+
+        // l bounced from the other surface
+        let mut l_indirect = Vec3::ZERO;
+        let wi = m.sameple(wo, n);
+        l_indirect += self.cast_ray(&Ray::new(intersection.coords, wi))
+            * m.eval(wi, wo, n)
+            * wi.dot(n)
+            / m.pdf(wi, wo, n)
+            / self.russian_roulette;
+
+        l_direct + l_indirect
     }
 }
+
 
 // i is the incident ray, n is the normalized normal
 // i face to the surface, n face to the outside
