@@ -138,7 +138,7 @@ impl Scene {
                 if intersection_to_light.coords.abs_diff_eq(x, EPSILON) {
                     // ray from p to x is not blocked in the middle
                     hit_color += intersection_to_light.m.get_emission()
-                        * intersection.m.eval(ws, wo, n)
+                        * intersection.m.eval(wo, ws, n)
                         * ws.dot(n)
                         * ws.dot(-intersection_to_light.normal)
                         / (x - p).length_squared()
