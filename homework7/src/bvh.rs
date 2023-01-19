@@ -1,4 +1,4 @@
-use std::time::Instant;
+use std::{time::Instant, rc::Rc};
 
 use crate::{
     bounds3::{Bounds3, Dimension},
@@ -14,7 +14,7 @@ enum BVHSplitMethod {
 
 enum NodeContent {
     Leaf {
-        object: Box<dyn Object>,
+        object: Rc<dyn Object>,
     },
     BiNode {
         left: Box<BVHBuildNode>,
@@ -83,7 +83,7 @@ pub struct BVHAccel {
 }
 
 impl BVHAccel {
-    pub fn new(p: Vec<Box<dyn Object>>) -> Self {
+    pub fn new(p: Vec<Rc<dyn Object>>) -> Self {
         let mut res = Self {
             maxPrimsInNode: 1,
             splitMethod: BVHSplitMethod::NAIVE,
@@ -103,7 +103,7 @@ impl BVHAccel {
         return res;
     }
 
-    fn recursive_build(objects: Vec<Box<dyn Object>>) -> BVHBuildNode {
+    fn recursive_build(objects: Vec<Rc<dyn Object>>) -> BVHBuildNode {
         if objects.len() == 0 {
             panic!("logic error")
         }

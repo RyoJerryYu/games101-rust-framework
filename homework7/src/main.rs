@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use anyhow::Result;
 use glam::Vec3;
 use homework7::object::material::{Material, MaterialType};
@@ -7,7 +9,6 @@ use homework7::triangle::MeshTriangle;
 
 fn main() -> Result<()> {
     let mut scene = Scene::new(784, 784);
-    let mut object_holder = scene.new_object_holder();
 
     let red = Material::new(
         MaterialType::Diffuse,
@@ -40,15 +41,15 @@ fn main() -> Result<()> {
     let right = MeshTriangle::new("homework7/models/cornellbox/right.obj", &green)?;
     let light_obj = MeshTriangle::new("homework7/models/cornellbox/light.obj", &light)?;
 
-    object_holder.add_object(Box::new(floor));
-    object_holder.add_object(Box::new(shortbox));
-    object_holder.add_object(Box::new(tallbox));
-    object_holder.add_object(Box::new(left));
-    object_holder.add_object(Box::new(right));
-    object_holder.add_object(Box::new(light_obj));
+    scene.add_object(Rc::new(floor));
+    scene.add_object(Rc::new(shortbox));
+    scene.add_object(Rc::new(tallbox));
+    scene.add_object(Rc::new(left));
+    scene.add_object(Rc::new(right));
+    scene.add_object(Rc::new(light_obj));
 
     // no add light, add object light
-    scene.build_bvh(object_holder);
+    scene.build_bvh();
 
     let r = Renderer {};
     r.render(&scene);
