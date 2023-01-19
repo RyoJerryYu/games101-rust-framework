@@ -1,3 +1,8 @@
+use std::{
+    fmt::format,
+    time::{Instant, SystemTime, UNIX_EPOCH},
+};
+
 use glam::{Vec2, Vec3};
 
 use crate::{object::object::Object, ray::Ray, scene::Scene};
@@ -9,7 +14,9 @@ pub struct HitPayload<'a> {
     pub hit_obj: &'a Box<dyn Object>,
 }
 
-pub struct Renderer {}
+pub struct Renderer {
+    pub spp: i32,
+}
 
 fn update_progress(progress: f32) {
     let bar_width = 70;
@@ -49,7 +56,7 @@ impl Renderer {
         let eye_pos = Vec3::new(278.0, 273.0, -800.0);
 
         // change the spp value to change sample ammount
-        let spp = 16;
+        let spp = self.spp;
         // j represent the height value, which 0 on the top
         for j in 0..scene.height {
             // i represent the width value
@@ -72,7 +79,8 @@ impl Renderer {
                     .normalize();
                 let buf_index = get_buffer_index(scene.height, scene.width, i, j);
                 for _ in 0..spp {
-                    frame_buffer[buf_index] = scene.cast_ray(&Ray::new(eye_pos, dir), 0) / spp as f32;
+                    frame_buffer[buf_index] +=
+                        scene.cast_ray(&Ray::new(eye_pos, dir)) / spp as f32;
                 }
             }
             update_progress((j as f32) / (scene.height as f32));
@@ -84,7 +92,11 @@ impl Renderer {
             scene.width as u32,
             scene.height as u32,
         );
-        utils::graphic::save_image(&r, "output.png").expect("save image error");
+        utils::graphic::save_image(
+            &r,
+            format!("spp{}-{}-{}-{}-output.png",spp, eye_pos.x, eye_pos.y, eye_pos.z),
+        )
+        .expect("save image error");
     }
 }
 

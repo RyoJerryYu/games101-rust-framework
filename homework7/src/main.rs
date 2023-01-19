@@ -51,7 +51,13 @@ fn main() -> Result<()> {
     // no add light, add object light
     scene.build_bvh();
 
-    let r = Renderer {};
+    let r = Renderer { spp: 1 };
+    r.render(&scene);
+
+    let r = Renderer { spp: 2 };
+    r.render(&scene);
+
+    let r = Renderer { spp: 4 };
     r.render(&scene);
 
     Ok(())

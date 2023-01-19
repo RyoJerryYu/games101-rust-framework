@@ -157,6 +157,8 @@ impl Object for Triangle {
         let x = get_random_float().sqrt();
         let y = get_random_float();
 
+        // 1-x, x*(1-y), x*y is the barycentric coordinates
+        // note that x ~ sqrt , so that the coordinate is averaged
         Some(SampleResult{
             coords: self.v0 * (1.0 - x) + self.v1 * ( x * (1.0 - y)) + self.v2 * (x * y),
             normal: self.normal,
