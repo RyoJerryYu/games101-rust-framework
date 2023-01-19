@@ -47,6 +47,9 @@ impl Renderer {
 
         // Use this variable as the eye position to start your rays.
         let eye_pos = Vec3::new(278.0, 273.0, -800.0);
+
+        // change the spp value to change sample ammount
+        let spp = 16;
         // j represent the height value, which 0 on the top
         for j in 0..scene.height {
             // i represent the width value
@@ -59,8 +62,8 @@ impl Renderer {
 
                 // x and y is the position where ray arrived on z = -1
                 // and aware that y is upside down
-                let y =
-                    -(j as f32 + 0.5 - scene.height as f32 / 2.0) / (scene.height as f32 / 2.0) * scale;
+                let y = -(j as f32 + 0.5 - scene.height as f32 / 2.0) / (scene.height as f32 / 2.0)
+                    * scale;
                 let x = (i as f32 + 0.5 - scene.width as f32 / 2.0) / (scene.width as f32 / 2.0)
                     * scale
                     * image_aspect_ratio;
@@ -68,7 +71,9 @@ impl Renderer {
                 let dir = Vec3::new(-x, -y, 1.0) // Don't forget to normalize this direction!
                     .normalize();
                 let buf_index = get_buffer_index(scene.height, scene.width, i, j);
-                frame_buffer[buf_index] = scene.cast_ray(&Ray::new(eye_pos, dir), 0);
+                for _ in 0..spp {
+                    frame_buffer[buf_index] = scene.cast_ray(&Ray::new(eye_pos, dir), 0) / spp as f32;
+                }
             }
             update_progress((j as f32) / (scene.height as f32));
         }

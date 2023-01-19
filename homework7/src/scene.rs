@@ -7,7 +7,7 @@ use crate::{
     bvh::BVHAccel,
     global::get_random_float,
     light::Light,
-    object::{intersection::Intersection, material::MaterialType, object::Object},
+    object::{intersection::{Intersection, SampleResult}, material::MaterialType, object::Object},
     ray::Ray,
 };
 use glam::{Vec2, Vec3};
@@ -68,23 +68,42 @@ impl Scene {
         println!("Scene build BVH end");
     }
 
-    fn sample_light(&self, pos: &mut Intersection, pdf: &mut f32) {
+    // return pos: Intersection, pdf: f32
+    fn sample_light(&self) -> Option<SampleResult> {
         let mut emit_area_sum = 0.0;
 
-        // for each object has emit, add area
+        for k in 0..self.objects.len() {
+            if self.objects[k].has_emit() {
+                emit_area_sum += self.objects[k].get_area();
+            }
+        }
+
         let p = get_random_float() * emit_area_sum;
         emit_area_sum = 0.0;
 
-        // for each object has emit, add area
-        // when area > p, sample light on that object
-
         // means random choose an emitting object on the weight of area
-        todo!()
+        for k in 0..self.objects.len() {
+            if self.objects[k].has_emit() {
+                emit_area_sum += self.objects[k].get_area();
+
+                if p <= emit_area_sum {
+                    return self.objects[k].sample();
+                }
+            }
+        }
+        None
     }
     // Implementation of Path Tracing
     pub fn cast_ray(&self, ray: &Ray, depth: u32) -> Vec3 {
-        todo!()
         // TO DO Implement Path Tracing Algorithm here
+        // let (mut pdf_light, mut intersect_light) = (0.0, Intersection);
+
+        let intersection = match self.intersect(ray) {
+            None => return self.background_color,
+            Some(i) => i,
+        };
+
+        todo!()
     }
 }
 

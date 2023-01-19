@@ -3,7 +3,7 @@ use std::{time::Instant, rc::Rc};
 use crate::{
     bounds3::{Bounds3, Dimension},
     global::get_random_float,
-    object::{intersection::Intersection, object::Object},
+    object::{intersection::{Intersection, SampleResult}, object::Object},
     ray::Ray,
 };
 
@@ -59,17 +59,18 @@ impl BVHBuildNode {
     }
 
     // note: make pos and pdf as option return would be more simple here too
-    pub fn get_sample(&self, p: f32, pos: &mut Intersection, pdf: &mut f32) {
+    pub fn get_sample(&self, p: f32) -> Option<SampleResult> {
         match &self.content {
             NodeContent::Leaf { object } => {
-                object.sample(pos, pdf);
-                *pdf *= self.area;
+                let mut res = object.sample();
+                res.as_mut()?.pdf *= self.area;
+                return res;
             },
             NodeContent::BiNode { left, right } => {
                 if p < left.area {
-                    left.get_sample(p, pos, pdf)
+                    left.get_sample(p)
                 } else {
-                    right.get_sample(p, pos, pdf)
+                    right.get_sample(p)
                 }
             },
         }
@@ -187,13 +188,14 @@ impl BVHAccel {
     }
 
     // note: making pos and pdf as result whould be more simple here
-    pub fn sample(&self, pos: &mut Intersection, pdf: &mut f32) {
+    pub fn sample(&self) -> Option<SampleResult> {
         let root = match &self.root {
             Some(r) => r,
-            None => return,
+            None => return None,
         };
         let p = get_random_float().sqrt() * root.area;
-        root.get_sample(p, pos, pdf);
-        *pdf /= root.area;
+        let mut res = root.get_sample(p);
+        res.as_mut()?.pdf /= root.area;
+        return res;
     }
 }
