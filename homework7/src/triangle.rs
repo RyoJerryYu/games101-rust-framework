@@ -33,7 +33,7 @@ pub struct Triangle {
 
     pub normal: Vec3,
     pub area: f32,
-    pub m: Material,
+    pub m: Rc<Material>,
     bounding_box: Bounds3,
 }
 
@@ -173,7 +173,7 @@ impl Object for Triangle {
 }
 
 impl Triangle {
-    pub fn new(v0: Vec3, v1: Vec3, v2: Vec3, m: Material) -> Self {
+    pub fn new(v0: Vec3, v1: Vec3, v2: Vec3, m: Rc<Material>) -> Self {
         let e1 = v1 - v0;
         let e2 = v2 - v0;
         let normal = e1.cross(e2).normalize();
@@ -201,11 +201,11 @@ pub struct MeshTriangle {
     triangles: Vec<Rc<Triangle>>,
     bvh: BVHAccel,
     area: f32,
-    m: Material,
+    m: Rc<Material>,
 }
 
 impl MeshTriangle {
-    pub fn new(filename: &str, mt: &Material) -> Result<Self> {
+    pub fn new(filename: &str, mt: Rc<Material>) -> Result<Self> {
         let input = std::io::BufReader::new(std::fs::File::open(filename)?);
         let loadout: obj::Obj<obj::Position> = load_obj(input)?;
         dbg!("obj loaded");
@@ -309,7 +309,7 @@ mod test {
             Vec3::X,
             Vec3::Z,
             Vec3::Y,
-            Material::new(MaterialType::Diffuse, Vec3::ZERO, Vec3::ZERO),
+            Rc::new(Material::new(MaterialType::Diffuse, Vec3::ZERO, Vec3::ZERO)),
         );
 
         let inter = triangle.get_intersection(&ray);

@@ -86,7 +86,9 @@ impl Renderer {
                     frame_buffer[buf_index] += scene.cast_ray(&Ray::new(eye_pos, dir)) / spp as f32;
                 }
             }
-            update_progress((j as f32) / (scene.height as f32));
+            if j % 40 == 0 {
+                update_progress((j as f32) / (scene.height as f32));
+            }
         }
 
         // save framebuffer to file
