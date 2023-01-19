@@ -1,7 +1,10 @@
 use std::{
     fmt::format,
+    sync::mpsc,
     time::{Instant, SystemTime, UNIX_EPOCH},
 };
+
+use crossbeam_utils::thread;
 
 use glam::{Vec2, Vec3};
 
@@ -49,6 +52,7 @@ impl Renderer {
     // [/comment]
     pub fn render(&self, scene: &Scene) {
         let mut frame_buffer = vec![Vec3::ZERO; scene.width * scene.height];
+        let (send, recv) = mpsc::channel();
 
         let scale = (scene.fov * 0.5).to_radians().tan();
         let image_aspect_ratio = (scene.width as f32) / (scene.height as f32);
@@ -61,35 +65,68 @@ impl Renderer {
 
         // change the spp value to change sample ammount
         let spp = self.spp;
-        // j represent the height value, which 0 on the top
-        for j in 0..scene.height {
-            // i represent the width value
-            for i in 0..scene.width {
-                // generate primary ray direction
-                // TODO: Find the x and y positions of the current pixel to get the direction
-                // vector that passes through it.
-                // Also, don't forget to multiply both of them with the variable *scale*, and
-                // x (horizontal) variable with the *imageAspectRatio*
 
-                // x and y is the position where ray arrived on z = -1
-                // and aware that y is upside down
-                let y = -(j as f32 + 0.5 - scene.height as f32 / 2.0) / (scene.height as f32 / 2.0)
-                    * scale;
-                let x = (i as f32 + 0.5 - scene.width as f32 / 2.0) / (scene.width as f32 / 2.0)
-                    * scale
-                    * image_aspect_ratio;
+        thread::scope(|s| {
+            let mut handles = vec![];
 
-                let dir = Vec3::new(-x, y, 1.0) // Don't forget to normalize this direction!
-                    .normalize();
-                let buf_index = get_buffer_index(scene.height, scene.width, i, j);
-                for _ in 0..spp {
-                    frame_buffer[buf_index] += scene.cast_ray(&Ray::new(eye_pos, dir), true) / spp as f32;
+            let handle = s.spawn(|_| {
+                let mut m = 0;
+                for CastRayResult { buf_index, res } in recv {
+                    if m % 40000 == 0 {
+                        update_progress((m as f32) / (frame_buffer.len() as f32));
+                    }
+                    frame_buffer[buf_index] += res;
+                    m += 1;
                 }
+            });
+            handles.push(handle);
+
+            // j represent the height value, which 0 on the top
+            for j in 0..scene.height {
+                let send = send.clone();
+                let handle = s.spawn(move |_| {
+                    // i represent the width value
+                    for i in 0..scene.width {
+                        // generate primary ray direction
+                        // TODO: Find the x and y positions of the current pixel to get the direction
+                        // vector that passes through it.
+                        // Also, don't forget to multiply both of them with the variable *scale*, and
+                        // x (horizontal) variable with the *imageAspectRatio*
+
+                        // x and y is the position where ray arrived on z = -1
+                        // and aware that y is upside down
+                        let y = -(j as f32 + 0.5 - scene.height as f32 / 2.0)
+                            / (scene.height as f32 / 2.0)
+                            * scale;
+                        let x = (i as f32 + 0.5 - scene.width as f32 / 2.0)
+                            / (scene.width as f32 / 2.0)
+                            * scale
+                            * image_aspect_ratio;
+
+                        let dir = Vec3::new(-x, y, 1.0) // Don't forget to normalize this direction!
+                            .normalize();
+                        let buf_index = get_buffer_index(scene.height, scene.width, i, j);
+                        let ray = Ray::new(eye_pos, dir);
+                        let mut res = Vec3::ZERO;
+                        for _ in 0..spp {
+                            res += scene.cast_ray(&ray, true) / spp as f32;
+                            // println!("after cast ray");
+                            // println!("after sent");
+                            // frame_buffer[buf_index] +=
+                        }
+                        send.send(CastRayResult { buf_index, res }).unwrap();
+                    }
+                });
+                handles.push(handle);
             }
-            if j % 40 == 0 {
-                update_progress((j as f32) / (scene.height as f32));
+
+            drop(send);
+
+            for handle in handles {
+                handle.join().unwrap();
             }
-        }
+        })
+        .unwrap();
 
         // save framebuffer to file
         let r = utils::rasterizer::BufRasterizer::from_vec3s(
@@ -106,6 +143,11 @@ impl Renderer {
         )
         .expect("save image error");
     }
+}
+
+struct CastRayResult {
+    pub buf_index: usize,
+    pub res: Vec3,
 }
 
 #[cfg(test)]

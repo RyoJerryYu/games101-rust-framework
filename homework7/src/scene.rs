@@ -1,6 +1,5 @@
 use std::{
-    ops::{Mul, Neg},
-    rc::Rc,
+    ops::{Mul, Neg}, sync::Arc,
 };
 
 use crate::{
@@ -17,8 +16,8 @@ use crate::{
 use glam::{Vec2, Vec3};
 
 pub struct Scene {
-    objects: Vec<Rc<dyn Object>>,
-    lights: Vec<Box<dyn Light>>,
+    objects: Vec<Arc<dyn Object>>,
+    lights: Vec<Box<dyn Light + Sync>>,
 
     pub width: usize,
     pub height: usize,
@@ -52,15 +51,15 @@ impl Scene {
         }
     }
 
-    pub fn add_object(&mut self, object: Rc<dyn Object>) {
+    pub fn add_object(&mut self, object: Arc<dyn Object + Sync>) {
         self.objects.push(object)
     }
 
-    pub fn add_light(&mut self, light: Box<dyn Light>) {
+    pub fn add_light(&mut self, light: Box<dyn Light + Sync>) {
         self.lights.push(light);
     }
 
-    pub fn get_lights(&self) -> &Vec<Box<dyn Light>> {
+    pub fn get_lights(&self) -> &Vec<Box<dyn Light + Sync>> {
         &self.lights
     }
 
