@@ -38,7 +38,7 @@ impl Scene {
             lights: vec![],
             width: w,
             height: h,
-            fov: 90.0,
+            fov: 40.0,
             background_color: Vec3 {
                 x: 0.235294,
                 y: 0.67451,
@@ -123,14 +123,14 @@ impl Scene {
         if let Some(sample_result) = self.sample_light() {
             let p = intersection.coords; // the point that ray bounced
             let x = sample_result.coords; // the point that light emitted
-            let ws = x - p;
+            let ws = (x - p).normalize();
             if let Some(intersection_to_light) = self.intersect(&Ray::new(p, ws)) {
                 if intersection_to_light.coords.abs_diff_eq(x, EPSILON) {
                     // ray from p to x is not blocked in the middle
                     l_direct = intersection_to_light.m.get_emission()
                         * intersection.m.eval(ws, wo, n)
                         * ws.dot(n)
-                        * ws.dot(intersection_to_light.normal)
+                        * ws.dot(-intersection_to_light.normal)
                         / (x - p).length_squared()
                         / sample_result.pdf;
                 }

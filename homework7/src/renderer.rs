@@ -15,6 +15,7 @@ pub struct HitPayload<'a> {
 }
 
 pub struct Renderer {
+    pub prefix: String,
     pub spp: i32,
 }
 
@@ -53,6 +54,9 @@ impl Renderer {
         let image_aspect_ratio = (scene.width as f32) / (scene.height as f32);
 
         // Use this variable as the eye position to start your rays.
+        // let eye_pos = Vec3::new(278.0, 273.0, -800.0);
+        // box size: x: 0(right)..556(left) , y: 0(down)..548(up) , z: 0(out)..559(in)
+        // while fov = 40.0 , so scale is 0.3
         let eye_pos = Vec3::new(278.0, 273.0, -800.0);
 
         // change the spp value to change sample ammount
@@ -79,8 +83,7 @@ impl Renderer {
                     .normalize();
                 let buf_index = get_buffer_index(scene.height, scene.width, i, j);
                 for _ in 0..spp {
-                    frame_buffer[buf_index] +=
-                        scene.cast_ray(&Ray::new(eye_pos, dir)) / spp as f32;
+                    frame_buffer[buf_index] += scene.cast_ray(&Ray::new(eye_pos, dir)) / spp as f32;
                 }
             }
             update_progress((j as f32) / (scene.height as f32));
@@ -94,7 +97,10 @@ impl Renderer {
         );
         utils::graphic::save_image(
             &r,
-            format!("spp{}-{}-{}-{}-output.png",spp, eye_pos.x, eye_pos.y, eye_pos.z),
+            format!(
+                "{}-spp{}-{}-{}-{}-output.png",
+                self.prefix, spp, eye_pos.x, eye_pos.y, eye_pos.z
+            ),
         )
         .expect("save image error");
     }
