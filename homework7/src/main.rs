@@ -1,6 +1,5 @@
 use anyhow::Result;
 use glam::Vec3;
-use homework7::light::PointLight;
 use homework7::object::material::{Material, MaterialType};
 use homework7::renderer::Renderer;
 use homework7::scene::Scene;
@@ -39,13 +38,14 @@ fn main() -> Result<()> {
     let tallbox = MeshTriangle::new("homework7/models/cornellbox/tallbox.obj", &white)?;
     let left = MeshTriangle::new("homework7/models/cornellbox/left.obj", &red)?;
     let right = MeshTriangle::new("homework7/models/cornellbox/right.obj", &green)?;
-    // let light
+    let light_obj = MeshTriangle::new("homework7/models/cornellbox/light.obj", &light)?;
 
     object_holder.add_object(Box::new(floor));
     object_holder.add_object(Box::new(shortbox));
     object_holder.add_object(Box::new(tallbox));
     object_holder.add_object(Box::new(left));
     object_holder.add_object(Box::new(right));
+    object_holder.add_object(Box::new(light_obj));
 
     // no add light, add object light
     scene.build_bvh(object_holder);
