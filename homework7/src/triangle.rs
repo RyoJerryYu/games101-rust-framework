@@ -9,7 +9,7 @@ use crate::{
         intersection::Intersection,
         material::{Material, MaterialType},
         object::Object,
-    },
+    }, global::get_random_float,
 };
 
 #[derive(Debug, Clone)]
@@ -29,21 +29,12 @@ pub struct Triangle {
     pub t2: Vec3,
 
     pub normal: Vec3,
+    pub area: f32,
     pub m: Material,
     bounding_box: Bounds3,
 }
 
 impl Object for Triangle {
-    fn intersect(
-        &self,
-        ray: &crate::ray::Ray,
-        tnear: &mut f32, // return t
-        index: &mut usize,
-        uv: &mut Vec2,
-    ) -> bool {
-        return false;
-    }
-
     fn get_intersection(&self, ray: &crate::ray::Ray) -> Option<Intersection> {
         if ray.direction.dot(self.normal) > 0.0 {
             // ray casted from inner
@@ -155,6 +146,23 @@ impl Object for Triangle {
     fn get_bounds(&self) -> &Bounds3 {
         &self.bounding_box
     }
+
+    fn get_area(&self) -> f32 {
+        self.area
+    }
+
+    fn sample(&self, pos: &mut Intersection, pdf: &mut f32) {
+        let x = get_random_float().sqrt();
+        let y = get_random_float();
+
+        pos.coords = self.v0 * (1.0 - x) + self.v1 * ( x * (1.0 - y)) + self.v2 * (x * y);
+        pos.normal = self.normal;
+        *pdf = 1.0 / self.area;
+    }
+
+    fn has_emit(&self) -> bool {
+        self.m.has_emission()
+    }
 }
 
 impl Triangle {
@@ -163,6 +171,7 @@ impl Triangle {
         let e2 = v2 - v0;
         let normal = e1.cross(e2).normalize();
         let bounding_box = Bounds3::from_min_max(v0, v1).union_point(v2);
+        let area = e1.cross(e2).length() * 0.5;
         Self {
             v0,
             v1,
@@ -173,6 +182,7 @@ impl Triangle {
             t1: Vec3::ZERO,
             t2: Vec3::ZERO,
             normal,
+            area,
             m,
             bounding_box,
         }
@@ -183,10 +193,12 @@ pub struct MeshTriangle {
     bounding_box: Bounds3,
     triangles: Vec<Triangle>,
     bvh: BVHAccel,
+    area: f32,
+    m: Material,
 }
 
 impl MeshTriangle {
-    pub fn new(filename: &str) -> Result<Self> {
+    pub fn new(filename: &str, mt: &Material) -> Result<Self> {
         let input = std::io::BufReader::new(std::fs::File::open(filename)?);
         let loadout: obj::Obj<obj::Position> = load_obj(input)?;
         dbg!("obj loaded");
@@ -207,23 +219,21 @@ impl MeshTriangle {
                 max_vert = max_vert.max(face_vertices[j]);
             }
 
-            let mut new_mat =
-                Material::new(MaterialType::Diffuse, Vec3::ONE * 0.5, Vec3::ZERO);
-            new_mat.specular_exponent = 0.0;
-
             triangles.push(Triangle::new(
                 face_vertices[0],
                 face_vertices[1],
                 face_vertices[2],
-                new_mat,
+                mt.clone(),
             ))
         }
 
         let bounding_box = Bounds3::from_min_max(min_vert, max_vert);
 
+        let mut area = 0.0;
         let mut ptrs: Vec<Box<dyn Object>> = vec![];
         for triangle in triangles.iter() {
             ptrs.push(Box::new(triangle.clone()));
+            area += triangle.get_area();
         }
 
         println!("MeshTriangle build bvh start");
@@ -234,22 +244,13 @@ impl MeshTriangle {
             bounding_box,
             triangles,
             bvh,
+            area,
+            m: mt.clone(),
         })
     }
 }
 
 impl Object for MeshTriangle {
-    fn intersect(
-        &self,
-        ray: &crate::ray::Ray,
-        tnear: &mut f32, // return t
-        index: &mut usize,
-        uv: &mut Vec2,
-    ) -> bool {
-        // don't need this method?
-        todo!()
-    }
-
     fn get_intersection(&self, ray: &crate::ray::Ray) -> Option<Intersection> {
         self.bvh.intersect(ray)
     }
@@ -268,10 +269,22 @@ impl Object for MeshTriangle {
     }
 
     fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3 {
-        Vec3::ONE * 0.5
+        todo!()
     }
 
     fn get_bounds(&self) -> &Bounds3 {
         &self.bounding_box
+    }
+
+    fn get_area(&self) -> f32 {
+        self.area
+    }
+
+    fn sample(&self, pos: &mut Intersection, pdf: &mut f32) {
+        self.bvh.sample(pos, pdf)
+    }
+
+    fn has_emit(&self) -> bool {
+        self.m.has_emission()
     }
 }

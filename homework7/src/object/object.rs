@@ -7,15 +7,6 @@ use crate::object::intersection::Intersection;
 
 // representing the interfaces of virtual class `Object` in cpp codes
 pub trait Object {
-    // intersect on orig + t * dir
-    // intersect(ray:&Ray) -> bool
-    fn intersect(
-        &self,
-        ray: &Ray,
-        tnear: &mut f32, // return t
-        index: &mut usize,
-        uv: &mut Vec2,
-    ) -> bool;
     fn get_intersection(&self, ray: &Ray) -> Option<Intersection>;
     fn get_surface_properties(
         &self,
@@ -28,4 +19,7 @@ pub trait Object {
     );
     fn eval_diffuse_color(&self, _st: &Vec2) -> Vec3;
     fn get_bounds(&self) -> &Bounds3;
+    fn get_area(&self) -> f32;
+    fn sample(&self, pos: &mut Intersection, pdf: &mut f32);
+    fn has_emit(&self) -> bool;
 }
