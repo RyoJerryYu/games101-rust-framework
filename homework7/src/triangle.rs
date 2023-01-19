@@ -8,7 +8,7 @@ use crate::{
     bounds3::Bounds3,
     bvh::BVHAccel,
     object::{
-        intersection::Intersection,
+        intersection::{Intersection, SampleResult},
         material::{Material, MaterialType},
         object::Object,
     }, global::get_random_float,
@@ -153,13 +153,15 @@ impl Object for Triangle {
         self.area
     }
 
-    fn sample(&self, pos: &mut Intersection, pdf: &mut f32) {
+    fn sample(&self) -> Option<SampleResult> {
         let x = get_random_float().sqrt();
         let y = get_random_float();
 
-        pos.coords = self.v0 * (1.0 - x) + self.v1 * ( x * (1.0 - y)) + self.v2 * (x * y);
-        pos.normal = self.normal;
-        *pdf = 1.0 / self.area;
+        Some(SampleResult{
+            coords: self.v0 * (1.0 - x) + self.v1 * ( x * (1.0 - y)) + self.v2 * (x * y),
+            normal: self.normal,
+            pdf: 1.0 / self.area,
+        })
     }
 
     fn has_emit(&self) -> bool {
@@ -282,8 +284,8 @@ impl Object for MeshTriangle {
         self.area
     }
 
-    fn sample(&self, pos: &mut Intersection, pdf: &mut f32) {
-        self.bvh.sample(pos, pdf)
+    fn sample(&self) -> Option<SampleResult> {
+        self.bvh.sample()
     }
 
     fn has_emit(&self) -> bool {

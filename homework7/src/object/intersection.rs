@@ -9,3 +9,9 @@ pub struct Intersection<'a> {
     pub obj: &'a dyn Object,
     pub m: &'a Material,
 }
+
+pub struct SampleResult {
+    pub coords: Vec3, // pos.coords
+    pub normal: Vec3, // pos.normal
+    pub pdf: f32,
+}
