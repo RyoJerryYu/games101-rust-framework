@@ -150,16 +150,14 @@ impl Scene {
         // l bounced from the other surface
         let mut l_indirect = Vec3::ZERO;
         let wi = m.sameple(wo, n);
-        l_indirect += self.cast_ray(&Ray::new(intersection.coords, wi))
-            * m.eval(wi, wo, n)
-            * wi.dot(n)
-            / m.pdf(wi, wo, n)
-            / self.russian_roulette;
+        l_indirect +=
+            self.cast_ray(&Ray::new(intersection.coords, wi)) * m.eval(wi, wo, n) * wi.dot(n)
+                / m.pdf(wi, wo, n)
+                / self.russian_roulette;
 
         l_direct + l_indirect
     }
 }
-
 
 // i is the incident ray, n is the normalized normal
 // i face to the surface, n face to the outside
