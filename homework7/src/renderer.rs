@@ -83,7 +83,7 @@ impl Renderer {
                     .normalize();
                 let buf_index = get_buffer_index(scene.height, scene.width, i, j);
                 for _ in 0..spp {
-                    frame_buffer[buf_index] += scene.cast_ray(&Ray::new(eye_pos, dir)) / spp as f32;
+                    frame_buffer[buf_index] += scene.cast_ray(&Ray::new(eye_pos, dir), true) / spp as f32;
                 }
             }
             if j % 40 == 0 {
