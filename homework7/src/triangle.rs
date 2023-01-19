@@ -7,11 +7,12 @@ use obj::load_obj;
 use crate::{
     bounds3::Bounds3,
     bvh::BVHAccel,
+    global::get_random_float,
     object::{
         intersection::{Intersection, SampleResult},
         material::{Material, MaterialType},
         object::Object,
-    }, global::get_random_float,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -159,8 +160,8 @@ impl Object for Triangle {
 
         // 1-x, x*(1-y), x*y is the barycentric coordinates
         // note that x ~ sqrt , so that the coordinate is averaged
-        Some(SampleResult{
-            coords: self.v0 * (1.0 - x) + self.v1 * ( x * (1.0 - y)) + self.v2 * (x * y),
+        Some(SampleResult {
+            coords: self.v0 * (1.0 - x) + self.v1 * (x * (1.0 - y)) + self.v2 * (x * y),
             normal: self.normal,
             pdf: 1.0 / self.area,
         })
@@ -210,16 +211,16 @@ impl MeshTriangle {
         dbg!("obj loaded");
 
         let mut triangles = vec![];
-        let mut min_vert = Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY);
-        let mut max_vert = Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
+        let mut min_vert = Vec3::new(f32::INFINITY, f32::INFINITY, f32::INFINITY);
+        let mut max_vert = Vec3::new(-f32::INFINITY, -f32::INFINITY, -f32::INFINITY);
 
         for i in (0..loadout.indices.len()).step_by(3) {
-            let mut face_vertices = vec![Vec3::ZERO;3];
+            let mut face_vertices = vec![Vec3::ZERO; 3];
 
             for j in 0..3 {
                 // dbg!(i, j);
                 let vertice = &loadout.vertices[loadout.indices[i + j] as usize];
-                face_vertices[j] = Vec3::from_array(vertice.position) * 60.0;
+                face_vertices[j] = Vec3::from_array(vertice.position);
 
                 min_vert = min_vert.min(face_vertices[j]);
                 max_vert = max_vert.max(face_vertices[j]);
@@ -292,5 +293,28 @@ impl Object for MeshTriangle {
 
     fn has_emit(&self) -> bool {
         self.m.has_emission()
+    }
+}
+
+#[cfg(test)]
+mod test {
+
+    use crate::ray::Ray;
+
+    use super::*;
+    #[test]
+    fn test_intersect_triangle() {
+        let ray = Ray::new(Vec3::ONE, Vec3::ONE.normalize());
+        let triangle = Triangle::new(
+            Vec3::X,
+            Vec3::Z,
+            Vec3::Y,
+            Material::new(MaterialType::Diffuse, Vec3::ZERO, Vec3::ZERO),
+        );
+
+        let inter = triangle.get_intersection(&ray);
+        assert!(inter.is_some());
+        let inter = inter.unwrap();
+        assert!(inter.coords.x > 0.0)
     }
 }
