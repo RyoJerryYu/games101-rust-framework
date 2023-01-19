@@ -8,7 +8,7 @@ use crate::object::intersection::Intersection;
 use super::intersection::SampleResult;
 
 // representing the interfaces of virtual class `Object` in cpp codes
-pub trait Object {
+pub trait Object: Send + Sync {
     fn get_intersection(&self, ray: &Ray) -> Option<Intersection>;
     fn get_surface_properties(
         &self,

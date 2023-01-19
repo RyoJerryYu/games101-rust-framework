@@ -1,4 +1,4 @@
-use std::rc::Rc;
+use std::{rc::Rc, sync::Arc};
 
 use anyhow::Result;
 use glam::{Vec2, Vec3};
@@ -33,7 +33,7 @@ pub struct Triangle {
 
     pub normal: Vec3,
     pub area: f32,
-    pub m: Rc<Material>,
+    pub m: Arc<Material>,
     bounding_box: Bounds3,
 }
 
@@ -173,7 +173,7 @@ impl Object for Triangle {
 }
 
 impl Triangle {
-    pub fn new(v0: Vec3, v1: Vec3, v2: Vec3, m: Rc<Material>) -> Self {
+    pub fn new(v0: Vec3, v1: Vec3, v2: Vec3, m: Arc<Material>) -> Self {
         let e1 = v1 - v0;
         let e2 = v2 - v0;
         let normal = e1.cross(e2).normalize();
@@ -198,14 +198,14 @@ impl Triangle {
 
 pub struct MeshTriangle {
     bounding_box: Bounds3,
-    triangles: Vec<Rc<Triangle>>,
+    triangles: Vec<Arc<Triangle>>,
     bvh: BVHAccel,
     area: f32,
-    m: Rc<Material>,
+    m: Arc<Material>,
 }
 
 impl MeshTriangle {
-    pub fn new(filename: &str, mt: Rc<Material>) -> Result<Self> {
+    pub fn new(filename: &str, mt: Arc<Material>) -> Result<Self> {
         let input = std::io::BufReader::new(std::fs::File::open(filename)?);
         let loadout: obj::Obj<obj::Position> = load_obj(input)?;
         dbg!("obj loaded");
@@ -226,7 +226,7 @@ impl MeshTriangle {
                 max_vert = max_vert.max(face_vertices[j]);
             }
 
-            triangles.push(Rc::new(Triangle::new(
+            triangles.push(Arc::new(Triangle::new(
                 face_vertices[0],
                 face_vertices[1],
                 face_vertices[2],
@@ -237,7 +237,7 @@ impl MeshTriangle {
         let bounding_box = Bounds3::from_min_max(min_vert, max_vert);
 
         let mut area = 0.0;
-        let mut ptrs: Vec<Rc<dyn Object>> = vec![];
+        let mut ptrs: Vec<Arc<dyn Object>> = vec![];
         for triangle in triangles.iter() {
             ptrs.push(triangle.clone());
             area += triangle.get_area();
@@ -309,7 +309,7 @@ mod test {
             Vec3::X,
             Vec3::Z,
             Vec3::Y,
-            Rc::new(Material::new(MaterialType::Diffuse, Vec3::ZERO, Vec3::ZERO)),
+            Arc::new(Material::new(MaterialType::Diffuse, Vec3::ZERO, Vec3::ZERO)),
         );
 
         let inter = triangle.get_intersection(&ray);

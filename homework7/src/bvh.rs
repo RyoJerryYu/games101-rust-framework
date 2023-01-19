@@ -1,9 +1,12 @@
-use std::{time::Instant, rc::Rc};
+use std::{rc::Rc, sync::Arc, time::Instant};
 
 use crate::{
     bounds3::{Bounds3, Dimension},
     global::get_random_float,
-    object::{intersection::{Intersection, SampleResult}, object::Object},
+    object::{
+        intersection::{Intersection, SampleResult},
+        object::Object,
+    },
     ray::Ray,
 };
 
@@ -14,7 +17,7 @@ enum BVHSplitMethod {
 
 enum NodeContent {
     Leaf {
-        object: Rc<dyn Object>,
+        object: Arc<dyn Object>,
     },
     BiNode {
         left: Box<BVHBuildNode>,
@@ -65,14 +68,14 @@ impl BVHBuildNode {
                 let mut res = object.sample();
                 res.as_mut()?.pdf *= self.area;
                 return res;
-            },
+            }
             NodeContent::BiNode { left, right } => {
                 if p < left.area {
                     left.get_sample(p)
                 } else {
                     right.get_sample(p)
                 }
-            },
+            }
         }
     }
 }
@@ -84,7 +87,7 @@ pub struct BVHAccel {
 }
 
 impl BVHAccel {
-    pub fn new(p: Vec<Rc<dyn Object>>) -> Self {
+    pub fn new(p: Vec<Arc<dyn Object>>) -> Self {
         let mut res = Self {
             maxPrimsInNode: 1,
             splitMethod: BVHSplitMethod::NAIVE,
@@ -104,7 +107,7 @@ impl BVHAccel {
         return res;
     }
 
-    fn recursive_build(objects: Vec<Rc<dyn Object>>) -> BVHBuildNode {
+    fn recursive_build(objects: Vec<Arc<dyn Object>>) -> BVHBuildNode {
         if objects.len() == 0 {
             panic!("logic error")
         }
