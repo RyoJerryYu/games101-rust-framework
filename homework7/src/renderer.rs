@@ -56,7 +56,7 @@ impl Renderer {
         // Use this variable as the eye position to start your rays.
         // let eye_pos = Vec3::new(278.0, 273.0, -800.0);
         // box size: x: 0(right)..556(left) , y: 0(down)..548(up) , z: 0(out)..559(in)
-        // while fov = 40.0 , so scale is 0.3
+        // while fov = 40.0 , so scale is 0.36
         let eye_pos = Vec3::new(278.0, 273.0, -800.0);
 
         // change the spp value to change sample ammount
@@ -79,7 +79,7 @@ impl Renderer {
                     * scale
                     * image_aspect_ratio;
 
-                let dir = Vec3::new(-x, -y, 1.0) // Don't forget to normalize this direction!
+                let dir = Vec3::new(-x, y, 1.0) // Don't forget to normalize this direction!
                     .normalize();
                 let buf_index = get_buffer_index(scene.height, scene.width, i, j);
                 for _ in 0..spp {
