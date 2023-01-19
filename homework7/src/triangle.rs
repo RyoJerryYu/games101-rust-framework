@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use anyhow::Result;
 use glam::{Vec2, Vec3};
 use obj::load_obj;
@@ -191,7 +193,7 @@ impl Triangle {
 
 pub struct MeshTriangle {
     bounding_box: Bounds3,
-    triangles: Vec<Triangle>,
+    triangles: Vec<Rc<Triangle>>,
     bvh: BVHAccel,
     area: f32,
     m: Material,
@@ -219,20 +221,20 @@ impl MeshTriangle {
                 max_vert = max_vert.max(face_vertices[j]);
             }
 
-            triangles.push(Triangle::new(
+            triangles.push(Rc::new(Triangle::new(
                 face_vertices[0],
                 face_vertices[1],
                 face_vertices[2],
                 mt.clone(),
-            ))
+            )))
         }
 
         let bounding_box = Bounds3::from_min_max(min_vert, max_vert);
 
         let mut area = 0.0;
-        let mut ptrs: Vec<Box<dyn Object>> = vec![];
+        let mut ptrs: Vec<Rc<dyn Object>> = vec![];
         for triangle in triangles.iter() {
-            ptrs.push(Box::new(triangle.clone()));
+            ptrs.push(triangle.clone());
             area += triangle.get_area();
         }
 

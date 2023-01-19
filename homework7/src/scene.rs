@@ -1,4 +1,7 @@
-use std::ops::{Mul, Neg};
+use std::{
+    ops::{Mul, Neg},
+    rc::Rc,
+};
 
 use crate::{
     bvh::BVHAccel,
@@ -9,18 +12,8 @@ use crate::{
 };
 use glam::{Vec2, Vec3};
 
-// used for resolve the ownership problem of objects
-pub struct SceneObjectHolder {
-    objects: Vec<Box<dyn Object>>,
-}
-
-impl SceneObjectHolder {
-    pub fn add_object(&mut self, object: Box<dyn Object>) {
-        self.objects.push(object);
-    }
-}
-
 pub struct Scene {
+    objects: Vec<Rc<dyn Object>>,
     lights: Vec<Box<dyn Light>>,
 
     pub width: usize,
@@ -36,6 +29,7 @@ pub struct Scene {
 impl Scene {
     pub fn new(w: usize, h: usize) -> Self {
         Self {
+            objects: vec![],
             lights: vec![],
             width: w,
             height: h,
@@ -52,8 +46,8 @@ impl Scene {
         }
     }
 
-    pub fn new_object_holder(&self) -> SceneObjectHolder {
-        SceneObjectHolder { objects: vec![] }
+    pub fn add_object(&mut self, object: Rc<dyn Object>) {
+        self.objects.push(object)
     }
 
     pub fn add_light(&mut self, light: Box<dyn Light>) {
@@ -68,9 +62,9 @@ impl Scene {
         self.bvh.as_ref()?.intersect(ray)
     }
 
-    pub fn build_bvh(&mut self, object_holder: SceneObjectHolder) {
+    pub fn build_bvh(&mut self) {
         println!("Scene build BVH start");
-        self.bvh = Some(BVHAccel::new(object_holder.objects));
+        self.bvh = Some(BVHAccel::new(self.objects.clone()));
         println!("Scene build BVH end");
     }
 
