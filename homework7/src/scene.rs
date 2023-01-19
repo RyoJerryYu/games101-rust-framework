@@ -100,15 +100,14 @@ impl Scene {
         None
     }
     // Implementation of Path Tracing
-    pub fn cast_ray(&self, ray: &Ray) -> Vec3 {
+    pub fn cast_ray(&self, ray: &Ray, from_camera: bool) -> Vec3 {
         let intersection = match self.intersect(ray) {
             None => return Vec3::ZERO,
             Some(i) => i,
         };
 
-        let m = intersection.m;
         let hit_object = intersection.obj;
-        let mut hit_color: Vec3;
+        let mut hit_color = Vec3::ZERO;
         let wo = -ray.direction;
 
         let uv: Vec2 = Vec2::ZERO;
@@ -118,16 +117,27 @@ impl Scene {
         let mut st: Vec2 = Vec2::ZERO;
         hit_object.get_surface_properties(&hit_point, &ray.direction, &index, &uv, &mut n, &mut st);
 
+        // l from the hit point emmitted
+        if intersection.m.has_emission() {
+            if from_camera {
+                return intersection.m.get_emission() * wo.dot(n);
+                // / (ray.origin - hit_point).length_squared();
+            } else {
+                // indirect l should not add direct light emittion
+                // for escaping over sampling
+                return Vec3::ZERO;
+            }
+        }
+
         // l from the light directly
-        let mut l_direct = Vec3::ZERO;
         if let Some(sample_result) = self.sample_light() {
             let p = intersection.coords; // the point that ray bounced
             let x = sample_result.coords; // the point that light emitted
-            let ws = (x - p).normalize();
+            let ws = (x - p).normalize(); // direction from hit point to light
             if let Some(intersection_to_light) = self.intersect(&Ray::new(p, ws)) {
                 if intersection_to_light.coords.abs_diff_eq(x, EPSILON) {
                     // ray from p to x is not blocked in the middle
-                    l_direct = intersection_to_light.m.get_emission()
+                    hit_color += intersection_to_light.m.get_emission()
                         * intersection.m.eval(ws, wo, n)
                         * ws.dot(n)
                         * ws.dot(-intersection_to_light.normal)
@@ -139,18 +149,18 @@ impl Scene {
 
         if get_random_float() > self.russian_roulette {
             // exit the recursive
-            return l_direct;
+            return hit_color;
         }
 
         // l bounced from the other surface
-        let mut l_indirect = Vec3::ZERO;
-        let wi = m.sameple(wo, n);
-        l_indirect +=
-            self.cast_ray(&Ray::new(intersection.coords, wi)) * m.eval(wi, wo, n) * wi.dot(n)
-                / m.pdf(wi, wo, n)
-                / self.russian_roulette;
+        let wi = intersection.m.sameple(wo, n);
+        hit_color += self.cast_ray(&Ray::new(intersection.coords, wi), false)
+            * intersection.m.eval(wi, wo, n)
+            * wi.dot(n)
+            / intersection.m.pdf(wi, wo, n)
+            / self.russian_roulette;
 
-        l_direct + l_indirect
+        hit_color
     }
 }
 
