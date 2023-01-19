@@ -2,6 +2,7 @@ use std::time::Instant;
 
 use crate::{
     bounds3::{Bounds3, Dimension},
+    global::get_random_float,
     object::{intersection::Intersection, object::Object},
     ray::Ray,
 };
@@ -23,6 +24,7 @@ enum NodeContent {
 
 struct BVHBuildNode {
     bounds: Bounds3,
+    area: f32,
     content: NodeContent,
 }
 
@@ -55,6 +57,23 @@ impl BVHBuildNode {
             }
         }
     }
+
+    // note: make pos and pdf as option return would be more simple here too
+    pub fn get_sample(&self, p: f32, pos: &mut Intersection, pdf: &mut f32) {
+        match &self.content {
+            NodeContent::Leaf { object } => {
+                object.sample(pos, pdf);
+                *pdf *= self.area;
+            },
+            NodeContent::BiNode { left, right } => {
+                if p < left.area {
+                    left.get_sample(p, pos, pdf)
+                } else {
+                    right.get_sample(p, pos, pdf)
+                }
+            },
+        }
+    }
 }
 
 pub struct BVHAccel {
@@ -76,7 +95,10 @@ impl BVHAccel {
 
         let start_time = Instant::now();
         res.root = Some(Box::new(BVHAccel::recursive_build(p)));
-        println!("BVHAccel revursive build took {} seconds", start_time.elapsed().as_secs_f32());
+        println!(
+            "BVHAccel revursive build took {} seconds",
+            start_time.elapsed().as_secs_f32()
+        );
 
         return res;
     }
@@ -90,6 +112,7 @@ impl BVHAccel {
             1 => {
                 return BVHBuildNode {
                     bounds: objects[0].get_bounds().clone(),
+                    area: objects[0].get_area(),
                     content: NodeContent::Leaf {
                         object: objects.into_iter().nth(0).unwrap(),
                     },
@@ -104,6 +127,7 @@ impl BVHAccel {
 
                 return BVHBuildNode {
                     bounds: left.bounds.union(&right.bounds),
+                    area: left.area + right.area,
                     content: NodeContent::BiNode {
                         left: Box::new(left),
                         right: Box::new(right),
@@ -148,6 +172,7 @@ impl BVHAccel {
 
                 return BVHBuildNode {
                     bounds: left.bounds.union(&right.bounds),
+                    area: left.area + right.area,
                     content: NodeContent::BiNode {
                         left: Box::new(left),
                         right: Box::new(right),
@@ -159,5 +184,16 @@ impl BVHAccel {
 
     pub fn intersect(&self, ray: &Ray) -> Option<Intersection> {
         self.root.as_ref()?.get_intersection(ray)
+    }
+
+    // note: making pos and pdf as result whould be more simple here
+    pub fn sample(&self, pos: &mut Intersection, pdf: &mut f32) {
+        let root = match &self.root {
+            Some(r) => r,
+            None => return,
+        };
+        let p = get_random_float().sqrt() * root.area;
+        root.get_sample(p, pos, pdf);
+        *pdf /= root.area;
     }
 }
