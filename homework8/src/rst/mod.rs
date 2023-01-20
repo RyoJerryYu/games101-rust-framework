@@ -1,5 +1,10 @@
+mod types;
+mod object;
+
 use glam::Vec2;
 use utils::{rasterizer::Rasterizable, triangle::Rgb};
+
+use self::types::{XYBound, Object};
 
 #[derive(Clone, Copy, Debug)]
 pub struct SimpleDrawerConfig {
@@ -16,14 +21,6 @@ impl SimpleDrawerConfig {
             line_width: 2.0,
         }
     }
-}
-
-#[derive(Clone, Copy, Debug, Default)]
-pub struct XYBound<T> {
-    pub min_x: T,
-    pub max_x: T,
-    pub min_y: T,
-    pub max_y: T,
 }
 
 // the coordinate in simple drawer is the pixel coordinate
@@ -183,13 +180,24 @@ impl<'a> SimpleDrawer {
             Some(color)
         });
     }
+
+    pub fn draw_object(&mut self, obj: &impl Object) {
+        self.foreach_bound_pixel(obj.get_bound(), |p| -> Option<&Rgb> {
+            if !obj.is_in_bound(p) {
+                None
+            } else {
+                Some(obj.get_color())
+            }
+        })
+
+    }
 }
 
 #[cfg(test)]
 mod test {
     use utils::graphic::save_image;
 
-    use super::*;
+    use super::{*, object::Line};
     #[test]
     fn test_drawer() {
         let mut drawer = SimpleDrawer::new(700, 700, SimpleDrawerConfig::default());
@@ -220,6 +228,23 @@ mod test {
             Vec2::new(500.0, 300.0),
             &yellowgreen,
         );
+        save_image(&drawer, "output.png").unwrap();
+    }
+
+    #[test]
+    fn test_draw_object() {
+        let mut drawer = SimpleDrawer::new(700, 700, SimpleDrawerConfig::default());
+        let red = Rgb::new(255, 0, 0);
+
+        let p1 = Vec2::new(100.0, 100.0);
+        let p2 = Vec2::new(100.0, 200.0);
+        let p3 = Vec2::new(100.0, 300.0);
+        drawer.draw_point(p1, &red);
+        drawer.draw_point(p2, &red);
+        drawer.draw_point(p3, &red);
+        drawer.draw_object(&Line::new(p1, p2, &red));
+        drawer.draw_object(&Line::new(p2, p3, &red));
+
         save_image(&drawer, "output.png").unwrap();
     }
 }
