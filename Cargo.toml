@@ -9,5 +9,6 @@ members = [
     "homework5",
     "homework6",
     "homework7",
+    "homework8",
     "utils"
 ]
