@@ -105,16 +105,9 @@ impl Scene {
             Some(i) => i,
         };
 
-        let hit_object = intersection.obj;
         let mut hit_color = Vec3::ZERO;
         let wo = -ray.direction;
-
-        let uv: Vec2 = Vec2::ZERO;
-        let index: usize = 0;
-        let hit_point = intersection.coords;
-        let mut n = intersection.normal;
-        let mut st: Vec2 = Vec2::ZERO;
-        hit_object.get_surface_properties(&hit_point, &ray.direction, &index, &uv, &mut n, &mut st);
+        let n = intersection.normal;
 
         // l from the hit point emmitted
         if intersection.m.has_emission() {
@@ -134,7 +127,7 @@ impl Scene {
             let x = sample_result.coords; // the point that light emitted
             let ws = (x - p).normalize(); // direction from hit point to light
             if let Some(intersection_to_light) = self.intersect(&Ray::new(p, ws)) {
-                if intersection_to_light.coords.abs_diff_eq(x, EPSILON) {
+                if intersection_to_light.coords.abs_diff_eq(x, EPSILON) { // 
                     // ray from p to x is not blocked in the middle
                     hit_color += intersection_to_light.m.get_emission()
                         * intersection.m.eval(wo, ws, n)
