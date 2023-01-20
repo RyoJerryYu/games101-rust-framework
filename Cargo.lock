@@ -813,6 +813,25 @@ dependencies = [
 ]
 
 [[package]]
+name = "homework8"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "bitflags",
+ "crossbeam",
+ "crossbeam-utils",
+ "cv-convert",
+ "glam",
+ "glium",
+ "image",
+ "nalgebra 0.31.0",
+ "obj-rs",
+ "opencv",
+ "rand",
+ "utils",
+]
+
+[[package]]
 name = "ident_case"
 version = "1.0.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
