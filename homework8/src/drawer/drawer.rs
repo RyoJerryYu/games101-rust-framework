@@ -1,10 +1,13 @@
-mod types;
-mod object;
-
 use glam::Vec2;
 use utils::{rasterizer::Rasterizable, triangle::Rgb};
 
-use self::types::{XYBound, Object};
+use super::types::{Object, XYBound};
+
+pub trait Drawer {
+    fn clear(&mut self);
+    fn draw_point(&mut self, p: Vec2, color: &Rgb);
+    fn draw_line(&mut self, p1: Vec2, p2: Vec2, color: &Rgb);
+}
 
 #[derive(Clone, Copy, Debug)]
 pub struct SimpleDrawerConfig {
@@ -32,16 +35,6 @@ pub struct SimpleDrawer {
     line_width: f32, // 3.0
 
     frame_buf: Vec<Rgb>,
-}
-
-impl Rasterizable for SimpleDrawer {
-    fn data(&self) -> &Vec<utils::rgb::Rgb> {
-        &self.frame_buf
-    }
-
-    fn size(&self) -> (u32, u32) {
-        (self.width as u32, self.height as u32)
-    }
 }
 
 impl<'a> SimpleDrawer {
@@ -81,15 +74,6 @@ impl<'a> SimpleDrawer {
         }
     }
 
-    // get color of pixel at point
-    #[inline]
-    fn get_pixel(&self, x: usize, y: usize) -> Option<Rgb> {
-        match self.buf_ind_at(x, y) {
-            None => None,
-            Some(ind) => Some(self.frame_buf[ind]),
-        }
-    }
-
     #[inline]
     fn get_bound_for(&self, bound: XYBound<f32>) -> XYBound<usize> {
         XYBound {
@@ -122,10 +106,6 @@ impl<'a> SimpleDrawer {
         }
     }
 
-    pub fn clear(&mut self) {
-        self.frame_buf.fill(self.background)
-    }
-
     pub fn draw_circle(&mut self, center: Vec2, radius: f32, color: &Rgb) {
         let bound = XYBound {
             min_x: center.x - radius,
@@ -143,11 +123,37 @@ impl<'a> SimpleDrawer {
         });
     }
 
-    pub fn draw_point(&mut self, p: Vec2, color: &Rgb) {
+    pub fn draw_object(&mut self, obj: &impl Object) {
+        self.foreach_bound_pixel(obj.get_bound(), |p| -> Option<&Rgb> {
+            if !obj.is_in_bound(p) {
+                None
+            } else {
+                Some(obj.get_color())
+            }
+        })
+    }
+}
+
+impl Rasterizable for SimpleDrawer {
+    fn data(&self) -> &Vec<utils::rgb::Rgb> {
+        &self.frame_buf
+    }
+
+    fn size(&self) -> (u32, u32) {
+        (self.width as u32, self.height as u32)
+    }
+}
+
+impl Drawer for SimpleDrawer {
+    fn clear(&mut self) {
+        self.frame_buf.fill(self.background)
+    }
+
+    fn draw_point(&mut self, p: Vec2, color: &Rgb) {
         self.draw_circle(p, self.point_size / 2.0, color)
     }
 
-    pub fn draw_line(&mut self, p1: Vec2, p2: Vec2, color: &Rgb) {
+    fn draw_line(&mut self, p1: Vec2, p2: Vec2, color: &Rgb) {
         let half_width = self.line_width / 2.0;
         let l = p2 - p1;
         let direction = l.normalize();
@@ -180,24 +186,15 @@ impl<'a> SimpleDrawer {
             Some(color)
         });
     }
-
-    pub fn draw_object(&mut self, obj: &impl Object) {
-        self.foreach_bound_pixel(obj.get_bound(), |p| -> Option<&Rgb> {
-            if !obj.is_in_bound(p) {
-                None
-            } else {
-                Some(obj.get_color())
-            }
-        })
-
-    }
 }
 
 #[cfg(test)]
 mod test {
     use utils::graphic::save_image;
 
-    use super::{*, object::Line};
+    use super::super::object::Line;
+
+    use super::*;
     #[test]
     fn test_drawer() {
         let mut drawer = SimpleDrawer::new(700, 700, SimpleDrawerConfig::default());
