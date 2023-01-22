@@ -30,22 +30,24 @@ impl AppConfig {
     }
 }
 
-pub struct Application<'a> {
+pub struct Application {
     config: AppConfig,
 
-    rope_euler: Rope<'a>,
-    rope_verlet: Rope<'a>,
+    rope_euler: Rope,
+    rope_verlet: Rope,
 }
 
-impl<'a> Application<'a> {
+impl Application {
     pub fn new(config: AppConfig) -> Self {
+        // becouse the simple drawer use top left corner as the origin point,
+        // we shifted the coordinate here so it's not same as it given by games101 official homework
         Self {
             config,
             rope_euler: Rope::new(
-                Vec2 { x: 0.0, y: 200.0 },
+                Vec2 { x: 500.0, y: 300.0 },
                 Vec2 {
-                    x: -400.0,
-                    y: 200.0,
+                    x: 100.0,
+                    y: 300.0,
                 },
                 3,
                 config.mass,
@@ -53,10 +55,10 @@ impl<'a> Application<'a> {
                 vec![0],
             ),
             rope_verlet: Rope::new(
-                Vec2 { x: 0.0, y: 200.0 },
+                Vec2 { x: 500.0, y: 300.0 },
                 Vec2 {
-                    x: -400.0,
-                    y: 200.0,
+                    x: 100.0,
+                    y: 300.0,
                 },
                 3,
                 config.mass,
@@ -67,7 +69,7 @@ impl<'a> Application<'a> {
     }
 }
 
-impl<'a> App for Application<'a> {
+impl App for Application {
     fn render(&mut self, drawer: &mut dyn Drawer) {
         for _ in 0..self.config.steps_per_frame {
             self.rope_euler
@@ -78,7 +80,7 @@ impl<'a> App for Application<'a> {
 
         struct RenderCase<'a> {
             // rope
-            rope: &'a Rope<'a>,
+            rope: &'a Rope,
             color: Rgb,
         }
 

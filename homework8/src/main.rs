@@ -11,7 +11,7 @@ use utils::{
 
 fn main() {
     let save_path = "output.png";
-    let mut r = SimpleDrawer::new(700, 700, SimpleDrawerConfig::default());
+    let mut r = SimpleDrawer::new(1000, 1000, SimpleDrawerConfig::default());
     let mut app = Application::new(AppConfig::default());
 
     let (w, h) = r.size();
