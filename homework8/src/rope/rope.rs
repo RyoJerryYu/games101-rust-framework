@@ -60,7 +60,35 @@ impl Rope {
         res
     }
 
-    pub fn simulate_verlet(&mut self, delta_t: f32, gravity: Vec2) {}
+    pub fn simulate_verlet(&mut self, delta_t: f32, gravity: Vec2) {
+        let damping_factor = self.damping_factor(delta_t);
+        unsafe {
+            for s in &self.springs {
+                // TODO (Part 3): Simulate one timestep of the rope using explicit Verlet （solving constraints)
+                let distence = s.m2.position - s.m1.position;
+                let f = s.k * distence.normalize() * (distence.length() - s.rest_length);
+                deref_mass(&s.m1).forces += f;
+                deref_mass(&s.m2).forces += -f;
+            }
+
+            for m in &self.masses {
+                let mut m = deref_mass(m);
+                if !m.pinned {
+                    // TODO (Part 3.1): Set the new position of the rope mass
+                    m.forces += gravity;
+                    // m.velocity *= f32::exp(-delta_t * 0.025);
+
+                    let a = m.forces / m.mass;
+                    let x_t1 = m.position + damping_factor*(m.position - m.last_position) + a * delta_t * delta_t;
+                    m.last_position = m.position;
+                    m.position = x_t1;
+                    // TODO (Part 4): Add global Verlet damping
+                }
+
+                m.forces = Vec2::ZERO;
+            }
+        }
+    }
 
     // because of rust's super strong borrow check,
     // we can't modify a variable who have multiple reference,
@@ -72,11 +100,8 @@ impl Rope {
     // deref_mass(&m).position = Vec2::ZERO;
     // ```
     pub fn simulate_euler(&mut self, delta_t: f32, gravity: Vec2) {
+        let damping_factor = self.damping_factor(delta_t);
         unsafe {
-            let deref_mass = |m: &Rc<Mass>| -> &mut Mass {
-                return (Rc::as_ptr(m) as *mut Mass).as_mut().unwrap();
-            };
-
             for s in &self.springs {
                 // TODO (Part 2): Use Hooke's law to calculate the force on a node
 
@@ -93,7 +118,7 @@ impl Rope {
                     // TODO (Part 2): Add the force due to gravity, then compute the new velocity and position
                     // TODO (Part 2): Add global damping
                     m.forces += gravity;
-                    m.velocity *= f32::exp(-delta_t * 0.25);
+                    m.velocity *= damping_factor;
 
                     let a = m.forces / m.mass;
                     let v_t1 = m.velocity + a * delta_t;
@@ -118,6 +143,14 @@ impl Rope {
     pub fn springs_position(&self) -> SpringsPosition {
         SpringsPosition::new(&self.springs)
     }
+
+    fn damping_factor(&self, delta_t: f32) -> f32 {
+        f32::exp(-delta_t * 0.0005)
+    }
+}
+
+unsafe fn deref_mass(m: &Rc<Mass>) -> &mut Mass {
+    return (Rc::as_ptr(m) as *mut Mass).as_mut().unwrap();
 }
 
 pub struct SpringsPosition<'a> {
