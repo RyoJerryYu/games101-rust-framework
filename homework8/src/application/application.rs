@@ -24,7 +24,7 @@ impl AppConfig {
         Self {
             mass: 1.0,
             ks: 100.0,
-            steps_per_frame: 64,
+            steps_per_frame: 256,
             gravity: Vec2 { x: 0.0, y: 9.8 },
         }
     }
@@ -49,7 +49,7 @@ impl Application {
                     x: 100.0,
                     y: 300.0,
                 },
-                10,
+                20,
                 config.mass,
                 config.ks,
                 vec![0],
@@ -60,7 +60,7 @@ impl Application {
                     x: 100.0,
                     y: 300.0,
                 },
-                3,
+                20,
                 config.mass,
                 config.ks,
                 vec![0],
