@@ -4,7 +4,7 @@ use utils::{
     triangle::Rgb,
 };
 
-use crate::drawer::Drawer;
+use crate::{drawer::Drawer, rope::Rope};
 
 pub trait App {
     fn render(&mut self, drawer: &mut dyn Drawer);
@@ -30,59 +30,77 @@ impl AppConfig {
     }
 }
 
-pub struct Application {
+pub struct Application<'a> {
     config: AppConfig,
 
-    ropeEuler: u8,
-    ropeVerlet: u8,
+    rope_euler: Rope<'a>,
+    rope_verlet: Rope<'a>,
 }
 
-impl Application {
+impl<'a> Application<'a> {
     pub fn new(config: AppConfig) -> Self {
-        // TODO init rope
         Self {
             config,
-            ropeEuler: 0,
-            ropeVerlet: 0,
+            rope_euler: Rope::new(
+                Vec2 { x: 0.0, y: 200.0 },
+                Vec2 {
+                    x: -400.0,
+                    y: 200.0,
+                },
+                3,
+                config.mass,
+                config.ks,
+                vec![0],
+            ),
+            rope_verlet: Rope::new(
+                Vec2 { x: 0.0, y: 200.0 },
+                Vec2 {
+                    x: -400.0,
+                    y: 200.0,
+                },
+                3,
+                config.mass,
+                config.ks,
+                vec![0],
+            ),
         }
     }
 }
 
-impl App for Application {
+impl<'a> App for Application<'a> {
     fn render(&mut self, drawer: &mut dyn Drawer) {
-        for i in 0..self.config.steps_per_frame {
-            // self rope simulate
+        for _ in 0..self.config.steps_per_frame {
+            self.rope_euler
+                .simulate_euler(1 / self.config.steps_per_frame, self.config.gravity);
+            self.rope_verlet
+                .simulate_verlet(1 / self.config.steps_per_frame, self.config.gravity);
         }
 
         struct RenderCase<'a> {
             // rope
-            rope: &'a u8,
+            rope: &'a Rope<'a>,
             color: Rgb,
         }
 
         let render_case = [
             RenderCase {
-                rope: &self.ropeEuler,
+                rope: &self.rope_euler,
                 color: Rgb(0, 0, 255),
             },
             RenderCase {
-                rope: &self.ropeVerlet,
-                color: Rgb(0, 255, 0),
-            },
-            RenderCase {
-                rope: &self.ropeVerlet,
+                rope: &self.rope_verlet,
                 color: Rgb(0, 255, 0),
             },
         ];
 
         for RenderCase { rope, color } in render_case {
-            // for m in rope.masses
-            // draw point
-            let p = Vec2::new(*rope as f32, *rope as f32);
-            drawer.draw_point(p, &color);
+            for m in &rope.masses {
+                drawer.draw_point(m.position, &color);
+            }
 
-            // for s in rope springs
-            drawer.draw_line(p, -p, &color);
+            for s in &rope.springs {
+                drawer.draw_line(s.m1.position, s.m2.position, &color);
+            }
         }
     }
 
