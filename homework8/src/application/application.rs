@@ -25,7 +25,7 @@ impl AppConfig {
             mass: 1.0,
             ks: 100.0,
             steps_per_frame: 64,
-            gravity: Vec2 { x: 0.0, y: -1.0 },
+            gravity: Vec2 { x: 0.0, y: 9.8 },
         }
     }
 }
@@ -49,7 +49,7 @@ impl Application {
                     x: 100.0,
                     y: 300.0,
                 },
-                3,
+                10,
                 config.mass,
                 config.ks,
                 vec![0],
@@ -73,9 +73,9 @@ impl App for Application {
     fn render(&mut self, drawer: &mut dyn Drawer) {
         for _ in 0..self.config.steps_per_frame {
             self.rope_euler
-                .simulate_euler(1 / self.config.steps_per_frame, self.config.gravity);
+                .simulate_euler(1.0 / self.config.steps_per_frame as f32, self.config.gravity);
             self.rope_verlet
-                .simulate_verlet(1 / self.config.steps_per_frame, self.config.gravity);
+                .simulate_verlet(1.0 / self.config.steps_per_frame as f32, self.config.gravity);
         }
 
         struct RenderCase<'a> {
@@ -96,12 +96,12 @@ impl App for Application {
         ];
 
         for RenderCase { rope, color } in render_case {
-            for m in &rope.masses {
-                drawer.draw_point(m.position, &color);
+            for posi in rope.masses_positions() {
+                drawer.draw_point(posi, &color);
             }
 
-            for s in &rope.springs {
-                drawer.draw_line(s.m1.position, s.m2.position, &color);
+            for (start, end) in rope.springs_position() {
+                drawer.draw_line(start, end, &color);
             }
         }
     }
