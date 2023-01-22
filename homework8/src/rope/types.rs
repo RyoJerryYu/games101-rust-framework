@@ -1,3 +1,5 @@
+use std::rc::Rc;
+
 use glam::Vec2;
 
 pub struct Mass {
@@ -28,20 +30,20 @@ impl Mass {
     }
 }
 
-pub struct Spring<'a> {
+pub struct Spring {
     pub k: f32,
     pub rest_length: f32,
-    pub m1: &'a Mass,
-    pub m2: &'a Mass,
+    pub m1: Rc<Mass>,
+    pub m2: Rc<Mass>,
 }
 
-impl<'a> Spring<'a> {
-    pub fn new(a: &'a Mass, b: &'a Mass, k: f32) -> Self {
+impl Spring {
+    pub fn new(a: &Rc<Mass>, b: &Rc<Mass>, k: f32) -> Self {
         Self {
             k: k,
             rest_length: (a.position - b.position).length(),
-            m1: a,
-            m2: b,
+            m1: a.clone(),
+            m2: b.clone(),
         }
     }
 }
