@@ -1,5 +1,6 @@
 mod application;
 mod drawer;
+mod rope;
 
 use application::{App, AppConfig, Application};
 use drawer::{Drawer, SimpleDrawer, SimpleDrawerConfig};
